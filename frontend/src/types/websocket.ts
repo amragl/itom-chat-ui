@@ -6,7 +6,7 @@
  * - "error"     -- Error notification
  * - "heartbeat" -- Keep-alive ping/pong
  */
-export type WebSocketMessageType = "chat" | "status" | "error" | "heartbeat";
+export type WebSocketMessageType = 'chat' | 'status' | 'error' | 'heartbeat';
 
 /**
  * A structured WebSocket message for real-time communication.
@@ -36,7 +36,7 @@ export interface WebSocketChatPayload {
   content: string;
 
   /** The role of the sender. */
-  role: "user" | "assistant" | "system";
+  role: 'user' | 'assistant' | 'system';
 
   /** The agent involved, if any. */
   agentId?: string;
@@ -50,7 +50,7 @@ export interface WebSocketStatusPayload {
   agentId: string;
 
   /** The new status. */
-  status: "online" | "offline" | "busy";
+  status: 'online' | 'offline' | 'busy';
 
   /** ISO 8601 timestamp of the status change. */
   timestamp: string;

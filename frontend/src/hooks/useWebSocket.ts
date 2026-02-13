@@ -1,16 +1,12 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import type { WebSocketMessage } from "@/types";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { WebSocketMessage } from '@/types';
 
 /**
  * Possible states for the WebSocket connection.
  */
-export type ConnectionStatus =
-  | "connecting"
-  | "connected"
-  | "disconnected"
-  | "reconnecting";
+export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'reconnecting';
 
 /**
  * Configuration options for the useWebSocket hook.
@@ -68,10 +64,10 @@ const MAX_RECONNECT_DELAY_MS = 30_000;
  * Falls back to a sensible localhost default if the env var is unset.
  */
 function getDefaultUrl(): string {
-  if (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_WS_URL) {
+  if (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_WS_URL) {
     return process.env.NEXT_PUBLIC_WS_URL;
   }
-  return "ws://localhost:8000/ws";
+  return 'ws://localhost:8000/ws';
 }
 
 /**
@@ -82,7 +78,7 @@ function getDefaultUrl(): string {
  * runtimes).
  */
 function generateClientId(): string {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();
   }
   return `client-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
@@ -98,9 +94,7 @@ function generateClientId(): string {
  *   useWebSocket({ onMessage: (msg) => console.log(msg) });
  * ```
  */
-export function useWebSocket(
-  options: UseWebSocketOptions = {},
-): UseWebSocketReturn {
+export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketReturn {
   const {
     url,
     maxReconnectAttempts = 10,
@@ -112,8 +106,7 @@ export function useWebSocket(
     onError,
   } = options;
 
-  const [connectionStatus, setConnectionStatus] =
-    useState<ConnectionStatus>("disconnected");
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
   const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null);
 
   // Refs survive re-renders without triggering them.
@@ -133,8 +126,7 @@ export function useWebSocket(
    * Uses exponential backoff: 1s, 2s, 4s, 8s, ... capped at 30s.
    */
   const getReconnectDelay = useCallback((): number => {
-    const delay =
-      BASE_RECONNECT_DELAY_MS * Math.pow(2, reconnectAttemptsRef.current);
+    const delay = BASE_RECONNECT_DELAY_MS * Math.pow(2, reconnectAttemptsRef.current);
     return Math.min(delay, MAX_RECONNECT_DELAY_MS);
   }, []);
 
@@ -152,7 +144,7 @@ export function useWebSocket(
     heartbeatTimerRef.current = setInterval(() => {
       if (wsRef.current?.readyState === WebSocket.OPEN) {
         const heartbeat: WebSocketMessage = {
-          type: "heartbeat",
+          type: 'heartbeat',
           payload: { timestamp: new Date().toISOString() },
         };
         wsRef.current.send(JSON.stringify(heartbeat));
@@ -183,9 +175,9 @@ export function useWebSocket(
 
     const baseUrl = url ?? getDefaultUrl();
     // Append the client ID to the URL path
-    const fullUrl = `${baseUrl.replace(/\/$/, "")}/${clientIdRef.current}`;
+    const fullUrl = `${baseUrl.replace(/\/$/, '')}/${clientIdRef.current}`;
 
-    setConnectionStatus("connecting");
+    setConnectionStatus('connecting');
 
     const ws = new WebSocket(fullUrl);
     wsRef.current = ws;
@@ -193,7 +185,7 @@ export function useWebSocket(
     ws.onopen = () => {
       if (!mountedRef.current) return;
       reconnectAttemptsRef.current = 0;
-      setConnectionStatus("connected");
+      setConnectionStatus('connected');
       startHeartbeat();
       callbacksRef.current.onOpen?.();
     };
@@ -212,17 +204,14 @@ export function useWebSocket(
     ws.onclose = (event: CloseEvent) => {
       if (!mountedRef.current) return;
       stopHeartbeat();
-      setConnectionStatus("disconnected");
+      setConnectionStatus('disconnected');
       callbacksRef.current.onClose?.(event);
 
       // Attempt reconnect for abnormal closures
-      if (
-        event.code !== 1000 &&
-        reconnectAttemptsRef.current < maxReconnectAttempts
-      ) {
+      if (event.code !== 1000 && reconnectAttemptsRef.current < maxReconnectAttempts) {
         const delay = getReconnectDelay();
         reconnectAttemptsRef.current += 1;
-        setConnectionStatus("reconnecting");
+        setConnectionStatus('reconnecting');
         reconnectTimerRef.current = setTimeout(() => {
           if (mountedRef.current) {
             connect();
@@ -235,13 +224,7 @@ export function useWebSocket(
       if (!mountedRef.current) return;
       callbacksRef.current.onError?.(event);
     };
-  }, [
-    url,
-    maxReconnectAttempts,
-    startHeartbeat,
-    stopHeartbeat,
-    getReconnectDelay,
-  ]);
+  }, [url, maxReconnectAttempts, startHeartbeat, stopHeartbeat, getReconnectDelay]);
 
   /**
    * Send a structured WebSocketMessage. Silently drops messages if the
@@ -264,10 +247,10 @@ export function useWebSocket(
     if (wsRef.current) {
       // Close with normal code so auto-reconnect does not trigger
       wsRef.current.onclose = null;
-      wsRef.current.close(1000, "Manual reconnect");
+      wsRef.current.close(1000, 'Manual reconnect');
       wsRef.current = null;
     }
-    setConnectionStatus("disconnected");
+    setConnectionStatus('disconnected');
     connect();
   }, [cancelReconnect, stopHeartbeat, connect]);
 
@@ -283,7 +266,7 @@ export function useWebSocket(
       stopHeartbeat();
       if (wsRef.current) {
         wsRef.current.onclose = null;
-        wsRef.current.close(1000, "Component unmounted");
+        wsRef.current.close(1000, 'Component unmounted');
         wsRef.current = null;
       }
     };

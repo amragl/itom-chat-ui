@@ -4,17 +4,12 @@
  * - "offline" -- Agent is not available
  * - "busy"    -- Agent is processing a request and may have increased latency
  */
-export type AgentStatus = "online" | "offline" | "busy";
+export type AgentStatus = 'online' | 'offline' | 'busy';
 
 /**
  * The functional domain of an ITOM agent.
  */
-export type AgentDomain =
-  | "discovery"
-  | "asset"
-  | "audit"
-  | "documentation"
-  | "orchestrator";
+export type AgentDomain = 'discovery' | 'asset' | 'audit' | 'documentation' | 'orchestrator';
 
 /**
  * An ITOM agent that can participate in conversations.

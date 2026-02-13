@@ -7,7 +7,7 @@ import type {
   Message,
   SendMessagePayload,
   SendMessageResponse,
-} from "@/types";
+} from '@/types';
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -18,8 +18,7 @@ import type {
  * Reads from the NEXT_PUBLIC_API_URL environment variable at build time.
  * Falls back to http://localhost:8000 for local development.
  */
-const API_BASE_URL: string =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_BASE_URL: string = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
 
 // ---------------------------------------------------------------------------
 // Error handling
@@ -40,7 +39,7 @@ export class ApiError extends Error {
 
   constructor(status: number, message: string, body?: unknown) {
     super(message);
-    this.name = "ApiError";
+    this.name = 'ApiError';
     this.status = status;
     this.body = body;
   }
@@ -70,13 +69,13 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
   const url = `${API_BASE_URL}${path}`;
 
   const headers: HeadersInit = {
-    Accept: "application/json",
+    Accept: 'application/json',
     ...options.headers,
   };
 
   // Add Content-Type for requests with a body
   if (options.body) {
-    (headers as Record<string, string>)["Content-Type"] = "application/json";
+    (headers as Record<string, string>)['Content-Type'] = 'application/json';
   }
 
   const response = await fetch(url, {
@@ -93,7 +92,7 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
     }
 
     const message =
-      typeof body === "object" && body !== null && "detail" in body
+      typeof body === 'object' && body !== null && 'detail' in body
         ? String((body as Record<string, unknown>).detail)
         : `API request failed: ${response.status} ${response.statusText}`;
 
@@ -118,7 +117,7 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
  * Calls GET /api/health and returns the health response.
  */
 export async function getHealth(): Promise<HealthStatus> {
-  return apiFetch<HealthStatus>("/api/health");
+  return apiFetch<HealthStatus>('/api/health');
 }
 
 // ---------------------------------------------------------------------------
@@ -131,7 +130,7 @@ export async function getHealth(): Promise<HealthStatus> {
  * Calls GET /api/conversations.
  */
 export async function listConversations(): Promise<ConversationSummary[]> {
-  return apiFetch<ConversationSummary[]>("/api/conversations");
+  return apiFetch<ConversationSummary[]>('/api/conversations');
 }
 
 /**
@@ -154,10 +153,10 @@ export async function getConversation(id: string): Promise<Conversation> {
  * @returns The newly created conversation.
  */
 export async function createConversation(
-  payload: CreateConversationPayload = {}
+  payload: CreateConversationPayload = {},
 ): Promise<Conversation> {
-  return apiFetch<Conversation>("/api/conversations", {
-    method: "POST",
+  return apiFetch<Conversation>('/api/conversations', {
+    method: 'POST',
     body: JSON.stringify(payload),
   });
 }
@@ -170,10 +169,7 @@ export async function createConversation(
  * @param id - The conversation UUID to delete.
  */
 export async function deleteConversation(id: string): Promise<void> {
-  return apiFetch<void>(
-    `/api/conversations/${encodeURIComponent(id)}`,
-    { method: "DELETE" }
-  );
+  return apiFetch<void>(`/api/conversations/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
 
 // ---------------------------------------------------------------------------
@@ -188,11 +184,9 @@ export async function deleteConversation(id: string): Promise<void> {
  * @param payload - The message content, conversation ID, and optional agent target.
  * @returns Both the stored user message and the agent's response.
  */
-export async function sendMessage(
-  payload: SendMessagePayload
-): Promise<SendMessageResponse> {
-  return apiFetch<SendMessageResponse>("/api/chat", {
-    method: "POST",
+export async function sendMessage(payload: SendMessagePayload): Promise<SendMessageResponse> {
+  return apiFetch<SendMessageResponse>('/api/chat', {
+    method: 'POST',
     body: JSON.stringify(payload),
   });
 }
@@ -205,9 +199,7 @@ export async function sendMessage(
  * @param conversationId - The conversation UUID.
  */
 export async function getMessages(conversationId: string): Promise<Message[]> {
-  return apiFetch<Message[]>(
-    `/api/conversations/${encodeURIComponent(conversationId)}/messages`
-  );
+  return apiFetch<Message[]>(`/api/conversations/${encodeURIComponent(conversationId)}/messages`);
 }
 
 // ---------------------------------------------------------------------------
@@ -220,7 +212,7 @@ export async function getMessages(conversationId: string): Promise<Message[]> {
  * Calls GET /api/agents.
  */
 export async function listAgents(): Promise<Agent[]> {
-  return apiFetch<Agent[]>("/api/agents");
+  return apiFetch<Agent[]>('/api/agents');
 }
 
 /**

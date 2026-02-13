@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from 'next/link';
 
 export default function ChatPage() {
   return (
@@ -26,9 +26,8 @@ export default function ChatPage() {
         </h1>
 
         <p className="text-base leading-relaxed text-zinc-600 dark:text-zinc-400">
-          The chat interface is coming soon. This will be the main area for
-          conversing with ITOM agents, viewing streaming responses, and
-          interacting with artifacts.
+          The chat interface is coming soon. This will be the main area for conversing with ITOM
+          agents, viewing streaming responses, and interacting with artifacts.
         </p>
 
         <Link

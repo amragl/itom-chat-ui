@@ -5,7 +5,7 @@
  *   import { apiClient, ApiError } from "@/lib";
  */
 
-export { apiClient, ApiError } from "./api";
+export { apiClient, ApiError } from './api';
 export {
   getHealth,
   listConversations,
@@ -16,4 +16,4 @@ export {
   getMessages,
   listAgents,
   getAgent,
-} from "./api";
+} from './api';
