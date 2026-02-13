@@ -1,8 +1,8 @@
 {
-  "status": "idle",
-  "current_phase": null,
-  "current_ticket": null,
-  "current_agent": null,
+  "status": "running",
+  "current_phase": "phase-1",
+  "current_ticket": "CHAT-001",
+  "current_agent": "build",
   "current_step": null,
   "last_completed_step": null,
   "failed_step": null,
