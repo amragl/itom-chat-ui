@@ -19,3 +19,13 @@ export type {
   WebSocketHeartbeatPayload,
 } from './websocket';
 export type { ServiceNowUser, ServiceNowRoles } from './auth';
+export type {
+  StreamEventType,
+  StreamStartData,
+  TokenData,
+  StreamEndData,
+  StreamErrorData,
+  StreamEvent,
+  StreamingStatus,
+  StreamingState,
+} from './streaming';
