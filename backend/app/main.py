@@ -6,7 +6,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
-from .routers import health, websocket
+from .routers import agents, chat, health, websocket
+from .services.orchestrator import get_orchestrator_service
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.info("Orchestrator URL: %s", settings.orchestrator_url)
     logger.info("Database URL: %s", settings.database_url)
     yield
+    # Clean up the orchestrator HTTP client on shutdown
+    orch_service = get_orchestrator_service(settings)
+    await orch_service.close()
     logger.info("Shutting down %s", settings.app_name)
 
 
@@ -51,4 +55,6 @@ app.add_middleware(
 
 # Include routers
 app.include_router(health.router, prefix="/api")
+app.include_router(chat.router, prefix="/api")
+app.include_router(agents.router, prefix="/api")
 app.include_router(websocket.router)
