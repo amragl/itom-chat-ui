@@ -241,6 +241,79 @@ export async function getAgent(id: string): Promise<Agent> {
 }
 
 // ---------------------------------------------------------------------------
+// Streaming Chat
+// ---------------------------------------------------------------------------
+
+/**
+ * Payload for initiating a streaming chat request.
+ */
+export interface StreamChatPayload {
+  /** The user's message content. */
+  content: string;
+  /** The conversation this message belongs to. */
+  conversationId: string;
+  /** Optional agent ID to route to. When omitted, the orchestrator decides. */
+  agentTarget?: string;
+}
+
+/**
+ * Initiate a streaming chat request via POST /api/chat/stream.
+ *
+ * Returns the raw Response object so the caller (useStreamingResponse hook)
+ * can consume the body as a ReadableStream of SSE events.
+ *
+ * @param payload - The streaming chat request payload.
+ * @returns The raw fetch Response with content type text/event-stream.
+ * @throws {ApiError} When the request fails before the stream starts.
+ */
+export async function streamChatMessage(payload: StreamChatPayload): Promise<Response> {
+  const url = `${API_BASE_URL}/api/chat/stream`;
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Accept: 'text/event-stream',
+  };
+
+  // Attach ServiceNow access token from the Auth.js session
+  try {
+    const session = await getSession();
+    if (session?.accessToken) {
+      headers['Authorization'] = `Bearer ${session.accessToken}`;
+    }
+  } catch {
+    // Session fetch failed; proceed without token (backend will return 401)
+  }
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      content: payload.content,
+      conversation_id: payload.conversationId,
+      agent_target: payload.agentTarget ?? null,
+    }),
+  });
+
+  if (!response.ok) {
+    let body: unknown;
+    try {
+      body = await response.json();
+    } catch {
+      // Response body is not JSON
+    }
+
+    const message =
+      typeof body === 'object' && body !== null && 'detail' in body
+        ? String((body as Record<string, unknown>).detail)
+        : `Stream request failed: ${response.status} ${response.statusText}`;
+
+    throw new ApiError(response.status, message, body);
+  }
+
+  return response;
+}
+
+// ---------------------------------------------------------------------------
 // Exported client object
 // ---------------------------------------------------------------------------
 
@@ -268,6 +341,9 @@ export const apiClient = {
   // Messages
   sendMessage,
   getMessages,
+
+  // Streaming
+  streamChatMessage,
 
   // Agents
   listAgents,
