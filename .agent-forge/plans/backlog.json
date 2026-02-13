@@ -215,7 +215,7 @@
       "phase": "phase-1",
       "priority": "medium",
       "type": "feature",
-      "status": "planned",
+      "status": "in-progress",
       "dependencies": [
         "CHAT-001",
         "CHAT-003"

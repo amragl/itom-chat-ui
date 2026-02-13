@@ -7,7 +7,7 @@
  * - "table"     -- Tabular data like CMDB records, inventory lists
  * - "code"      -- Code snippets, scripts, configuration files
  */
-export type ArtifactType = "report" | "dashboard" | "document" | "table" | "code";
+export type ArtifactType = 'report' | 'dashboard' | 'document' | 'table' | 'code';
 
 /**
  * Metadata associated with an artifact, providing context about its origin and structure.

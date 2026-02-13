@@ -1,4 +1,4 @@
-import type { Artifact } from "./artifact";
+import type { Artifact } from './artifact';
 
 /**
  * The role of the entity that sent a message.
@@ -6,7 +6,7 @@ import type { Artifact } from "./artifact";
  * - "assistant" -- an ITOM agent responding
  * - "system" -- system-generated messages (e.g., status updates, errors)
  */
-export type MessageRole = "user" | "assistant" | "system";
+export type MessageRole = 'user' | 'assistant' | 'system';
 
 /**
  * A single chat message within a conversation.
