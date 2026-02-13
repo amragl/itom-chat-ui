@@ -14,8 +14,10 @@ dist/
 build/
 *.egg-info/
 
-# Environment
+# Environment (keep .env.example in version control)
 .env
+.env.local
+.env.*.local
 
 # Database
 *.db
