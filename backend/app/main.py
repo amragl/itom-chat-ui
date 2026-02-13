@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
@@ -7,13 +8,28 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import get_settings
 from .routers import health
 
+logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Application lifespan handler for startup and shutdown events."""
-    # Startup
+    settings = get_settings()
+    logging.basicConfig(
+        level=settings.log_level,
+        format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+    )
+    logger.info(
+        "Starting %s (debug=%s, log_level=%s)",
+        settings.app_name,
+        settings.debug,
+        settings.log_level,
+    )
+    logger.info("CORS origins: %s", settings.cors_origins)
+    logger.info("Orchestrator URL: %s", settings.orchestrator_url)
+    logger.info("Database URL: %s", settings.database_url)
     yield
-    # Shutdown
+    logger.info("Shutting down %s", settings.app_name)
 
 
 app = FastAPI(
