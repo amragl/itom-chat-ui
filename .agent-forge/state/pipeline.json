@@ -1,7 +1,7 @@
 {
   "status": "running",
-  "current_phase": "phase-1",
-  "current_ticket": "CHAT-004",
+  "current_phase": "phase-1b",
+  "current_ticket": "CHAT-040",
   "current_agent": "build",
   "current_step": null,
   "last_completed_step": null,
