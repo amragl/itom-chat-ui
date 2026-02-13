@@ -1,1 +1,21 @@
-{}
+{
+  "last_build": "2026-02-13T10:00:00Z",
+  "status": "in-progress",
+  "ticket": {
+    "id": "CHAT-001",
+    "github_issue": 1,
+    "title": "Initialize Next.js project with TypeScript and app router"
+  },
+  "branch": "feature/CHAT-001-nextjs-init",
+  "pr_number": null,
+  "pr_url": null,
+  "commits": 0,
+  "files_changed": [],
+  "self_check": {
+    "compiles": null,
+    "meets_criteria": null,
+    "no_mocks": null,
+    "no_placeholders": null
+  },
+  "history": []
+}
