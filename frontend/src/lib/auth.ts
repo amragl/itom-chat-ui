@@ -17,6 +17,7 @@
  */
 
 import NextAuth from 'next-auth';
+import Credentials from 'next-auth/providers/credentials';
 import type { NextAuthConfig } from 'next-auth';
 import type { JWT } from '@auth/core/jwt';
 import type { ServiceNowUser, ServiceNowRoles } from '@/types/auth';
@@ -24,6 +25,14 @@ import type { ServiceNowUser, ServiceNowRoles } from '@/types/auth';
 // ---------------------------------------------------------------------------
 // Environment variables
 // ---------------------------------------------------------------------------
+
+/**
+ * Authentication mode: "sso" (default) or "dev".
+ * In dev mode, a Credentials provider is added that accepts any login
+ * and returns a static dev user. The ServiceNow OAuth provider is still
+ * registered but will not be used when dev mode is active.
+ */
+const AUTH_MODE = (process.env.AUTH_MODE ?? 'sso').toLowerCase();
 
 /**
  * ServiceNow instance URL (e.g., "https://dev12345.service-now.com").
@@ -36,6 +45,25 @@ const SERVICENOW_CLIENT_ID = process.env.SERVICENOW_CLIENT_ID ?? '';
 
 /** OAuth 2.0 client secret registered in ServiceNow. */
 const SERVICENOW_CLIENT_SECRET = process.env.SERVICENOW_CLIENT_SECRET ?? '';
+
+// ---------------------------------------------------------------------------
+// Dev mode user
+// ---------------------------------------------------------------------------
+
+/**
+ * Static dev user returned by the Credentials provider in dev mode.
+ * Fields mirror the ServiceNow user profile shape.
+ */
+const DEV_USER_PROFILE = {
+  id: 'dev-000000000000000000000000000000',
+  name: 'Dev User',
+  email: 'dev@localhost',
+  image: '',
+  sysId: 'dev-000000000000000000000000000000',
+  userName: 'dev.user',
+  title: 'Developer',
+  roles: ['admin', 'itil'] as string[],
+};
 
 // ---------------------------------------------------------------------------
 // ServiceNow user profile response shape
@@ -185,8 +213,31 @@ function resolvePhotoUrl(photo: string): string {
 // Auth.js configuration
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Build the providers list based on AUTH_MODE
+// ---------------------------------------------------------------------------
+
+/**
+ * Dev-mode Credentials provider. Accepts any username/password (or none)
+ * and returns the static DEV_USER_PROFILE. This is only registered when
+ * AUTH_MODE=dev.
+ */
+const devCredentialsProvider = Credentials({
+  id: 'dev-credentials',
+  name: 'Development Login',
+  credentials: {
+    username: { label: 'Username', type: 'text', placeholder: 'dev.user' },
+  },
+  async authorize() {
+    // Always return the dev user regardless of credentials
+    return DEV_USER_PROFILE;
+  },
+});
+
 const authConfig: NextAuthConfig = {
   providers: [
+    // In dev mode, add the Credentials provider FIRST so it is the default
+    ...(AUTH_MODE === 'dev' ? [devCredentialsProvider] : []),
     {
       id: 'servicenow',
       name: 'ServiceNow',
@@ -318,13 +369,24 @@ const authConfig: NextAuthConfig = {
     async jwt({ token, user, account }): Promise<JWT> {
       // Initial sign-in: account and user are populated by the provider
       if (account && user) {
+        // Dev credentials provider uses type "credentials" and does not
+        // provide OAuth tokens. Use a sentinel value so the session
+        // callback can still populate accessToken for the API client.
+        const isDevProvider = account.provider === 'dev-credentials';
+
         return {
           ...token,
-          accessToken: account.access_token ?? undefined,
-          refreshToken: account.refresh_token ?? undefined,
-          accessTokenExpires: account.expires_at
-            ? account.expires_at
-            : undefined,
+          accessToken: isDevProvider
+            ? 'dev-mode-no-token'
+            : (account.access_token ?? undefined),
+          refreshToken: isDevProvider
+            ? undefined
+            : (account.refresh_token ?? undefined),
+          accessTokenExpires: isDevProvider
+            ? undefined
+            : account.expires_at
+              ? account.expires_at
+              : undefined,
           sysId: user.sysId ?? undefined,
           userName: user.userName ?? undefined,
           name: user.name ?? undefined,

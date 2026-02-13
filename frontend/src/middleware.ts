@@ -5,6 +5,10 @@
  * /login for all protected routes. Public routes (login, auth API, static
  * assets) are excluded via the matcher config.
  *
+ * When AUTH_MODE=dev, all authentication checks are bypassed -- every request
+ * is allowed through without a session cookie. This enables local development
+ * without ServiceNow OAuth credentials.
+ *
  * Auth.js stores the session in a cookie named `authjs.session-token`
  * (or `__Secure-authjs.session-token` in production). The middleware checks
  * for the presence of this cookie as a lightweight auth gate. The actual
@@ -17,8 +21,21 @@ import type { NextRequest } from 'next/server';
 /** Routes that do not require authentication. */
 const PUBLIC_PATHS = ['/login'];
 
+/**
+ * Read AUTH_MODE from the server-side environment.
+ * "dev" bypasses all auth checks; "sso" (default) enforces the session cookie.
+ */
+const AUTH_MODE = (process.env.AUTH_MODE ?? 'sso').toLowerCase();
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // --- Dev mode: skip all auth checks ---
+  if (AUTH_MODE === 'dev') {
+    return NextResponse.next();
+  }
+
+  // --- SSO mode: enforce session cookie ---
 
   // Allow public paths
   if (PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`))) {

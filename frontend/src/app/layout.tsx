@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { AppLayout } from '@/components/layout';
+import { DevModeBanner } from '@/components/auth';
 import { AuthSessionProvider } from '@/components/providers';
 import './globals.css';
 
@@ -23,6 +24,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.variable} antialiased`}>
         <AuthSessionProvider>
+          <DevModeBanner />
           <AppLayout>{children}</AppLayout>
         </AuthSessionProvider>
       </body>

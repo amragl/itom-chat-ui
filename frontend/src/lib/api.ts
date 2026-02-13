@@ -79,8 +79,11 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
     (headers as Record<string, string>)['Content-Type'] = 'application/json';
   }
 
-  // Attach ServiceNow access token from the Auth.js session (skip for health)
-  if (!path.endsWith('/health')) {
+  // Attach ServiceNow access token from the Auth.js session.
+  // In dev mode (AUTH_MODE=dev), the backend does not require a Bearer token,
+  // so we skip token attachment entirely to avoid unnecessary session lookups.
+  const authMode = process.env.NEXT_PUBLIC_AUTH_MODE ?? 'sso';
+  if (authMode !== 'dev' && !path.endsWith('/health')) {
     try {
       const session = await getSession();
       if (session?.accessToken) {
@@ -274,14 +277,18 @@ export async function streamChatMessage(payload: StreamChatPayload): Promise<Res
     Accept: 'text/event-stream',
   };
 
-  // Attach ServiceNow access token from the Auth.js session
-  try {
-    const session = await getSession();
-    if (session?.accessToken) {
-      headers['Authorization'] = `Bearer ${session.accessToken}`;
+  // Attach ServiceNow access token from the Auth.js session.
+  // In dev mode, the backend does not require a Bearer token.
+  const streamAuthMode = process.env.NEXT_PUBLIC_AUTH_MODE ?? 'sso';
+  if (streamAuthMode !== 'dev') {
+    try {
+      const session = await getSession();
+      if (session?.accessToken) {
+        headers['Authorization'] = `Bearer ${session.accessToken}`;
+      }
+    } catch {
+      // Session fetch failed; proceed without token (backend will return 401)
     }
-  } catch {
-    // Session fetch failed; proceed without token (backend will return 401)
   }
 
   const response = await fetch(url, {

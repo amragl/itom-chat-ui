@@ -22,9 +22,26 @@ class Settings(BaseSettings):
     orchestrator_url: str = "http://localhost:8000"
     database_url: str = "sqlite:///./chat.db"
 
+    # Authentication mode: "sso" (default) or "dev"
+    # "sso" validates ServiceNow OAuth Bearer tokens.
+    # "dev" skips token validation and injects a static dev user.
+    auth_mode: str = "sso"
+
     # ServiceNow authentication settings
     servicenow_instance: str = ""
     auth_token_cache_ttl: int = 300  # seconds (5 minutes)
+
+    @field_validator("auth_mode")
+    @classmethod
+    def validate_auth_mode(cls, value: str) -> str:
+        """Ensure auth_mode is a recognized value."""
+        allowed = {"sso", "dev"}
+        lower = value.lower()
+        if lower not in allowed:
+            raise ValueError(
+                f"Invalid auth_mode '{value}'. Must be one of: {', '.join(sorted(allowed))}"
+            )
+        return lower
 
     @field_validator("cors_origins", mode="before")
     @classmethod

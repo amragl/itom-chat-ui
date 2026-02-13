@@ -2,6 +2,10 @@
 
 Validates Bearer tokens by introspecting them against the ServiceNow instance.
 Caches validated tokens with a configurable TTL to avoid repeated API calls.
+
+When ``CHAT_AUTH_MODE=dev``, all token validation is bypassed and a static
+development user is injected into the request context. This allows local
+development and testing without a ServiceNow instance or valid OAuth credentials.
 """
 
 import logging
@@ -15,6 +19,21 @@ from .config import Settings, get_settings
 from .models.auth import CurrentUser
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Development mode user
+# ---------------------------------------------------------------------------
+
+DEV_USER = CurrentUser(
+    sys_id="dev-000000000000000000000000000000",
+    user_name="dev.user",
+    name="Dev User",
+    email="dev@localhost",
+    title="Developer",
+    roles=["admin", "itil"],
+)
+"""Static user returned in dev mode. Provides full admin/itil roles so all
+API endpoints are accessible during local development."""
 
 # ---------------------------------------------------------------------------
 # Token cache
@@ -167,12 +186,23 @@ async def get_current_user(
 ) -> CurrentUser:
     """FastAPI dependency that validates the ServiceNow access token.
 
-    Extracts the Bearer token from the Authorization header, validates it
-    against the ServiceNow instance (with caching), and returns the user.
+    When ``CHAT_AUTH_MODE=dev``, returns the static ``DEV_USER`` without
+    requiring any Bearer token. This allows local development without a
+    ServiceNow instance.
+
+    When ``CHAT_AUTH_MODE=sso`` (default), extracts the Bearer token from
+    the Authorization header, validates it against the ServiceNow instance
+    (with caching), and returns the user.
 
     Raises 401 if the token is missing, invalid, or the ServiceNow instance
-    is not configured.
+    is not configured (sso mode only).
     """
+    # --- Dev mode: bypass all token validation ---
+    if settings.auth_mode == "dev":
+        logger.debug("Auth mode is 'dev' -- returning static dev user")
+        return DEV_USER
+
+    # --- SSO mode: full ServiceNow token validation ---
     if credentials is None or not credentials.credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
