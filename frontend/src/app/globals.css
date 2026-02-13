@@ -1,25 +1,380 @@
 @import "tailwindcss";
 
+/* ============================================================
+   ITOM Chat UI - Design System Tokens
+   ============================================================
+   This file defines the complete design system for the ITOM Chat UI
+   using Tailwind CSS 4's @theme directive and CSS custom properties.
+
+   Color System:
+     - primary:   Blue tones for main actions, links, active states
+     - secondary: Purple tones for secondary actions, tags, badges
+     - accent:    Amber tones for highlights, notifications, emphasis
+     - neutral:   Slate tones for text, borders, backgrounds
+     - success:   Green tones for success states, online indicators
+     - warning:   Amber/orange tones for warning states, caution
+     - error:     Red tones for error states, destructive actions
+
+   Each color scale provides shades 50-950 for fine-grained control.
+   Utility classes: bg-primary-500, text-error-600, border-neutral-200, etc.
+
+   Theming:
+     CSS custom properties in :root define raw color values.
+     The @theme inline block registers them with Tailwind so utility
+     classes are generated. Swapping :root values (e.g., via a .dark
+     class or prefers-color-scheme) automatically updates all utilities.
+   ============================================================ */
+
+/* --- CSS Custom Properties: Light Theme (default) --- */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Base surfaces */
+  --bg: #ffffff;
+  --fg: #0f172a;
+  --srf: #ffffff;
+  --srf-raised: #f8fafc;
+  --srf-overlay: #f1f5f9;
+  --srf-sunken: #f8fafc;
+  --bdr: #e2e8f0;
+  --bdr-strong: #cbd5e1;
+  --bdr-subtle: #f1f5f9;
+
+  /* Primary (Blue) */
+  --pri-50: #eff6ff;
+  --pri-100: #dbeafe;
+  --pri-200: #bfdbfe;
+  --pri-300: #93c5fd;
+  --pri-400: #60a5fa;
+  --pri-500: #3b82f6;
+  --pri-600: #2563eb;
+  --pri-700: #1d4ed8;
+  --pri-800: #1e40af;
+  --pri-900: #1e3a8a;
+  --pri-950: #172554;
+
+  /* Secondary (Purple) */
+  --sec-50: #faf5ff;
+  --sec-100: #f3e8ff;
+  --sec-200: #e9d5ff;
+  --sec-300: #d8b4fe;
+  --sec-400: #c084fc;
+  --sec-500: #a855f7;
+  --sec-600: #9333ea;
+  --sec-700: #7e22ce;
+  --sec-800: #6b21a8;
+  --sec-900: #581c87;
+  --sec-950: #3b0764;
+
+  /* Accent (Amber) */
+  --acc-50: #fffbeb;
+  --acc-100: #fef3c7;
+  --acc-200: #fde68a;
+  --acc-300: #fcd34d;
+  --acc-400: #fbbf24;
+  --acc-500: #f59e0b;
+  --acc-600: #d97706;
+  --acc-700: #b45309;
+  --acc-800: #92400e;
+  --acc-900: #78350f;
+  --acc-950: #451a03;
+
+  /* Neutral (Slate) */
+  --neu-50: #f8fafc;
+  --neu-100: #f1f5f9;
+  --neu-200: #e2e8f0;
+  --neu-300: #cbd5e1;
+  --neu-400: #94a3b8;
+  --neu-500: #64748b;
+  --neu-600: #475569;
+  --neu-700: #334155;
+  --neu-800: #1e293b;
+  --neu-900: #0f172a;
+  --neu-950: #020617;
+
+  /* Success (Green) */
+  --suc-50: #f0fdf4;
+  --suc-100: #dcfce7;
+  --suc-200: #bbf7d0;
+  --suc-300: #86efac;
+  --suc-400: #4ade80;
+  --suc-500: #22c55e;
+  --suc-600: #16a34a;
+  --suc-700: #15803d;
+  --suc-800: #166534;
+  --suc-900: #14532d;
+  --suc-950: #052e16;
+
+  /* Warning (Orange) */
+  --wrn-50: #fff7ed;
+  --wrn-100: #ffedd5;
+  --wrn-200: #fed7aa;
+  --wrn-300: #fdba74;
+  --wrn-400: #fb923c;
+  --wrn-500: #f97316;
+  --wrn-600: #ea580c;
+  --wrn-700: #c2410c;
+  --wrn-800: #9a3412;
+  --wrn-900: #7c2d12;
+  --wrn-950: #431407;
+
+  /* Error (Red) */
+  --err-50: #fef2f2;
+  --err-100: #fee2e2;
+  --err-200: #fecaca;
+  --err-300: #fca5a5;
+  --err-400: #f87171;
+  --err-500: #ef4444;
+  --err-600: #dc2626;
+  --err-700: #b91c1c;
+  --err-800: #991b1b;
+  --err-900: #7f1d1d;
+  --err-950: #450a0a;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-inter);
-}
-
+/* --- CSS Custom Properties: Dark Theme --- */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg: #020617;
+    --fg: #f8fafc;
+    --srf: #0f172a;
+    --srf-raised: #1e293b;
+    --srf-overlay: #334155;
+    --srf-sunken: #020617;
+    --bdr: #334155;
+    --bdr-strong: #475569;
+    --bdr-subtle: #1e293b;
   }
 }
 
+/* ============================================================
+   Tailwind CSS 4 @theme Registration
+   ============================================================
+   The @theme inline block registers custom design tokens with
+   Tailwind so they generate utility classes. Using "inline" means
+   the compiled CSS will use var() references, keeping the output
+   small and enabling runtime theme switching.
+
+   Generated utilities include:
+     bg-primary-500, text-secondary-200, border-neutral-300,
+     bg-surface, text-foreground, shadow-lg, rounded-xl, etc.
+   ============================================================ */
+
+@theme inline {
+  /* --- Base / Semantic Colors --- */
+  --color-background: var(--bg);
+  --color-foreground: var(--fg);
+  --color-surface: var(--srf);
+  --color-surface-raised: var(--srf-raised);
+  --color-surface-overlay: var(--srf-overlay);
+  --color-surface-sunken: var(--srf-sunken);
+  --color-border: var(--bdr);
+  --color-border-strong: var(--bdr-strong);
+  --color-border-subtle: var(--bdr-subtle);
+
+  /* --- Primary (Blue) --- */
+  --color-primary-50: var(--pri-50);
+  --color-primary-100: var(--pri-100);
+  --color-primary-200: var(--pri-200);
+  --color-primary-300: var(--pri-300);
+  --color-primary-400: var(--pri-400);
+  --color-primary-500: var(--pri-500);
+  --color-primary-600: var(--pri-600);
+  --color-primary-700: var(--pri-700);
+  --color-primary-800: var(--pri-800);
+  --color-primary-900: var(--pri-900);
+  --color-primary-950: var(--pri-950);
+
+  /* --- Secondary (Purple) --- */
+  --color-secondary-50: var(--sec-50);
+  --color-secondary-100: var(--sec-100);
+  --color-secondary-200: var(--sec-200);
+  --color-secondary-300: var(--sec-300);
+  --color-secondary-400: var(--sec-400);
+  --color-secondary-500: var(--sec-500);
+  --color-secondary-600: var(--sec-600);
+  --color-secondary-700: var(--sec-700);
+  --color-secondary-800: var(--sec-800);
+  --color-secondary-900: var(--sec-900);
+  --color-secondary-950: var(--sec-950);
+
+  /* --- Accent (Amber) --- */
+  --color-accent-50: var(--acc-50);
+  --color-accent-100: var(--acc-100);
+  --color-accent-200: var(--acc-200);
+  --color-accent-300: var(--acc-300);
+  --color-accent-400: var(--acc-400);
+  --color-accent-500: var(--acc-500);
+  --color-accent-600: var(--acc-600);
+  --color-accent-700: var(--acc-700);
+  --color-accent-800: var(--acc-800);
+  --color-accent-900: var(--acc-900);
+  --color-accent-950: var(--acc-950);
+
+  /* --- Neutral (Slate) --- */
+  --color-neutral-50: var(--neu-50);
+  --color-neutral-100: var(--neu-100);
+  --color-neutral-200: var(--neu-200);
+  --color-neutral-300: var(--neu-300);
+  --color-neutral-400: var(--neu-400);
+  --color-neutral-500: var(--neu-500);
+  --color-neutral-600: var(--neu-600);
+  --color-neutral-700: var(--neu-700);
+  --color-neutral-800: var(--neu-800);
+  --color-neutral-900: var(--neu-900);
+  --color-neutral-950: var(--neu-950);
+
+  /* --- Success (Green) --- */
+  --color-success-50: var(--suc-50);
+  --color-success-100: var(--suc-100);
+  --color-success-200: var(--suc-200);
+  --color-success-300: var(--suc-300);
+  --color-success-400: var(--suc-400);
+  --color-success-500: var(--suc-500);
+  --color-success-600: var(--suc-600);
+  --color-success-700: var(--suc-700);
+  --color-success-800: var(--suc-800);
+  --color-success-900: var(--suc-900);
+  --color-success-950: var(--suc-950);
+
+  /* --- Warning (Orange) --- */
+  --color-warning-50: var(--wrn-50);
+  --color-warning-100: var(--wrn-100);
+  --color-warning-200: var(--wrn-200);
+  --color-warning-300: var(--wrn-300);
+  --color-warning-400: var(--wrn-400);
+  --color-warning-500: var(--wrn-500);
+  --color-warning-600: var(--wrn-600);
+  --color-warning-700: var(--wrn-700);
+  --color-warning-800: var(--wrn-800);
+  --color-warning-900: var(--wrn-900);
+  --color-warning-950: var(--wrn-950);
+
+  /* --- Error (Red) --- */
+  --color-error-50: var(--err-50);
+  --color-error-100: var(--err-100);
+  --color-error-200: var(--err-200);
+  --color-error-300: var(--err-300);
+  --color-error-400: var(--err-400);
+  --color-error-500: var(--err-500);
+  --color-error-600: var(--err-600);
+  --color-error-700: var(--err-700);
+  --color-error-800: var(--err-800);
+  --color-error-900: var(--err-900);
+  --color-error-950: var(--err-950);
+
+  /* --- Typography --- */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1rem;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base: 1rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl: 1.25rem;
+  --text-xl--line-height: 1.75rem;
+  --text-2xl: 1.5rem;
+  --text-2xl--line-height: 2rem;
+  --text-3xl: 1.875rem;
+  --text-3xl--line-height: 2.25rem;
+  --text-4xl: 2.25rem;
+  --text-4xl--line-height: 2.5rem;
+
+  /* --- Border Radius --- */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --radius-full: 9999px;
+
+  /* --- Box Shadows --- */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================================
+   Base Styles
+   ============================================================ */
+
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg);
+  color: var(--fg);
   font-family: var(--font-inter), Arial, Helvetica, sans-serif;
+}
+
+/* Smooth color transitions for theme switching */
+*,
+*::before,
+*::after {
+  transition-property: background-color, border-color;
+  transition-duration: 150ms;
+  transition-timing-function: ease-in-out;
+}
+
+/* Interactive elements get broader transition coverage */
+input,
+textarea,
+select,
+button {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 150ms;
+  transition-timing-function: ease-in-out;
+}
+
+/* Focus ring using primary color for accessibility */
+*:focus-visible {
+  outline: 2px solid var(--pri-500);
+  outline-offset: 2px;
+}
+
+/* Custom scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--neu-300);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--neu-400);
+}
+
+@media (prefers-color-scheme: dark) {
+  ::-webkit-scrollbar-thumb {
+    background: var(--neu-600);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--neu-500);
+  }
+}
+
+/* Text selection highlighting */
+::selection {
+  background-color: var(--pri-200);
+  color: var(--pri-900);
+}
+
+@media (prefers-color-scheme: dark) {
+  ::selection {
+    background-color: var(--pri-800);
+    color: var(--pri-100);
+  }
 }
