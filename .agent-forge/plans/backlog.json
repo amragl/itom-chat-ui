@@ -7,7 +7,7 @@
       "name": "Foundation",
       "description": "Project structure, Next.js setup, TailwindCSS, FastAPI backend, basic layout shell, environment configuration, WebSocket infrastructure, and development tooling.",
       "milestone": "Running Next.js frontend and FastAPI backend with basic layout shell, WebSocket connectivity, and hot-reload development environment.",
-      "status": "active",
+      "status": "done",
       "tickets": [
         "CHAT-001",
         "CHAT-002",
@@ -24,7 +24,7 @@
       "name": "Chat Core",
       "description": "Core chat interface: message input, message display with bubbles, streaming response handling, agent routing and selection, FastAPI chat endpoint, and real-time WebSocket messaging.",
       "milestone": "Functional chat interface where users can send messages, see streaming responses, and select which ITOM agent to interact with.",
-      "status": "planned",
+      "status": "active",
       "tickets": [
         "CHAT-009",
         "CHAT-010",
@@ -161,15 +161,15 @@
       "phase": "phase-1",
       "priority": "high",
       "type": "feature",
-      "status": "in-progress",
+      "status": "done",
       "dependencies": [
         "CHAT-001",
         "CHAT-002"
       ],
       "assigned_agent": "build",
       "estimated_complexity": "medium",
-      "pr_number": null,
-      "completed_at": null
+      "pr_number": 47,
+      "completed_at": "2026-02-13T13:25:00Z"
     },
     {
       "id": "CHAT-005",

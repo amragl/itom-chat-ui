@@ -1,42 +1,26 @@
 {
-  "last_build": "2026-02-13T18:00:00Z",
+  "last_build": "2026-02-13T19:00:00Z",
   "status": "success",
-  "timestamp": "2026-02-13T18:30:00Z",
+  "timestamp": "2026-02-13T19:15:00Z",
   "agent": "build",
-  "ticket_id": "CHAT-007",
+  "ticket_id": "CHAT-004",
   "ticket": {
-    "id": "CHAT-007",
-    "github_issue": 7,
-    "title": "Set up development tooling: ESLint, Prettier, and concurrent dev servers"
+    "id": "CHAT-004",
+    "github_issue": 4,
+    "title": "Create application layout shell with sidebar and main content area"
   },
-  "branch": "feature/CHAT-007-dev-tooling",
+  "branch": "feature/CHAT-004-layout-shell",
   "pr_number": null,
   "pr_url": null,
   "commits": 1,
   "files_changed": [
-    ".prettierrc",
-    "Makefile",
-    "package.json",
-    "package-lock.json",
-    "frontend/.prettierrc",
-    "frontend/.prettierignore",
-    "frontend/eslint.config.mjs",
-    "frontend/package.json",
-    "frontend/package-lock.json",
-    "frontend/src/app/chat/page.tsx",
-    "frontend/src/app/globals.css",
+    "frontend/src/components/layout/Sidebar.tsx",
+    "frontend/src/components/layout/MobileNav.tsx",
+    "frontend/src/components/layout/AppLayout.tsx",
+    "frontend/src/components/layout/index.ts",
     "frontend/src/app/layout.tsx",
     "frontend/src/app/page.tsx",
-    "frontend/src/hooks/index.ts",
-    "frontend/src/hooks/useWebSocket.ts",
-    "frontend/src/lib/api.ts",
-    "frontend/src/lib/index.ts",
-    "frontend/src/types/agent.ts",
-    "frontend/src/types/artifact.ts",
-    "frontend/src/types/conversation.ts",
-    "frontend/src/types/index.ts",
-    "frontend/src/types/message.ts",
-    "frontend/src/types/websocket.ts"
+    "frontend/src/app/chat/page.tsx"
   ],
   "self_check": {
     "compiles": true,
@@ -80,6 +64,12 @@
       "ticket_id": "CHAT-007",
       "status": "success",
       "timestamp": "2026-02-13T18:30:00Z",
+      "pr_number": null
+    },
+    {
+      "ticket_id": "CHAT-004",
+      "status": "success",
+      "timestamp": "2026-02-13T19:15:00Z",
       "pr_number": null
     }
   ]
