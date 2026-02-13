@@ -1,20 +1,28 @@
 {
-  "last_build": "2026-02-13T14:00:00Z",
+  "last_build": "2026-02-13T15:00:00Z",
   "status": "success",
-  "timestamp": "2026-02-13T14:30:00Z",
+  "timestamp": "2026-02-13T15:15:00Z",
   "agent": "build",
-  "ticket_id": "CHAT-002",
+  "ticket_id": "CHAT-008",
   "ticket": {
-    "id": "CHAT-002",
-    "github_issue": 2,
-    "title": "Configure TailwindCSS with design system tokens"
+    "id": "CHAT-008",
+    "github_issue": 8,
+    "title": "Create shared TypeScript type definitions and API client"
   },
-  "branch": "feature/CHAT-002-tailwind-design-tokens",
+  "branch": "feature/CHAT-008-types-api-client",
   "pr_number": null,
   "pr_url": null,
   "commits": 1,
   "files_changed": [
-    "frontend/src/app/globals.css"
+    "frontend/src/types/message.ts",
+    "frontend/src/types/artifact.ts",
+    "frontend/src/types/conversation.ts",
+    "frontend/src/types/agent.ts",
+    "frontend/src/types/health.ts",
+    "frontend/src/types/websocket.ts",
+    "frontend/src/types/index.ts",
+    "frontend/src/lib/api.ts",
+    "frontend/src/lib/index.ts"
   ],
   "self_check": {
     "compiles": true,
@@ -34,6 +42,12 @@
       "ticket_id": "CHAT-002",
       "status": "success",
       "timestamp": "2026-02-13T14:30:00Z",
+      "pr_number": null
+    },
+    {
+      "ticket_id": "CHAT-008",
+      "status": "success",
+      "timestamp": "2026-02-13T15:15:00Z",
       "pr_number": null
     }
   ]
