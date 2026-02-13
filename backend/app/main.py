@@ -26,6 +26,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         settings.debug,
         settings.log_level,
     )
+    logger.info("Auth mode: %s", settings.auth_mode.upper())
+    if settings.auth_mode == "dev":
+        logger.warning(
+            "DEV AUTH MODE ACTIVE -- all API requests bypass token validation. "
+            "Do NOT use this in production."
+        )
     logger.info("CORS origins: %s", settings.cors_origins)
     logger.info("Orchestrator URL: %s", settings.orchestrator_url)
     logger.info("Database URL: %s", settings.database_url)
