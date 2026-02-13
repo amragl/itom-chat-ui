@@ -233,7 +233,7 @@
       "phase": "phase-1",
       "priority": "high",
       "type": "feature",
-      "status": "planned",
+      "status": "in-progress",
       "dependencies": [
         "CHAT-001"
       ],
