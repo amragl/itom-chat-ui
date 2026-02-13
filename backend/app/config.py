@@ -22,6 +22,10 @@ class Settings(BaseSettings):
     orchestrator_url: str = "http://localhost:8000"
     database_url: str = "sqlite:///./chat.db"
 
+    # ServiceNow authentication settings
+    servicenow_instance: str = ""
+    auth_token_cache_ttl: int = 300  # seconds (5 minutes)
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def parse_cors_origins(cls, value: object) -> list[str]:

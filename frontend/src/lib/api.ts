@@ -1,3 +1,4 @@
+import { getSession } from 'next-auth/react';
 import type {
   Agent,
   Conversation,
@@ -76,6 +77,19 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
   // Add Content-Type for requests with a body
   if (options.body) {
     (headers as Record<string, string>)['Content-Type'] = 'application/json';
+  }
+
+  // Attach ServiceNow access token from the Auth.js session (skip for health)
+  if (!path.endsWith('/health')) {
+    try {
+      const session = await getSession();
+      if (session?.accessToken) {
+        (headers as Record<string, string>)['Authorization'] =
+          `Bearer ${session.accessToken}`;
+      }
+    } catch {
+      // Session fetch failed; proceed without token (backend will return 401)
+    }
   }
 
   const response = await fetch(url, {
