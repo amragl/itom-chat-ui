@@ -114,12 +114,12 @@
       "phase": "phase-1",
       "priority": "critical",
       "type": "feature",
-      "status": "in-progress",
+      "status": "done",
       "dependencies": [],
       "assigned_agent": "build",
       "estimated_complexity": "medium",
-      "pr_number": null,
-      "completed_at": null
+      "pr_number": 40,
+      "completed_at": "2026-02-13T10:15:00Z"
     },
     {
       "id": "CHAT-002",
