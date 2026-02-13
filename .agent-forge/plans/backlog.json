@@ -179,15 +179,15 @@
       "phase": "phase-1",
       "priority": "high",
       "type": "feature",
-      "status": "in-progress",
+      "status": "done",
       "dependencies": [
         "CHAT-001",
         "CHAT-003"
       ],
       "assigned_agent": "build",
       "estimated_complexity": "small",
-      "pr_number": null,
-      "completed_at": null
+      "pr_number": 44,
+      "completed_at": "2026-02-13T12:40:00Z"
     },
     {
       "id": "CHAT-006",
