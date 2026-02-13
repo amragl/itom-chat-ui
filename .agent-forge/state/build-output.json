@@ -1,30 +1,32 @@
 {
-  "last_build": "2026-02-13T20:00:00Z",
+  "last_build": "2026-02-14T03:05:00Z",
   "status": "success",
-  "timestamp": "2026-02-13T20:30:00Z",
+  "timestamp": "2026-02-14T03:05:00Z",
   "agent": "build",
-  "ticket_id": "CHAT-040",
+  "ticket_id": "CHAT-044",
+  "schema_version": "1.0.0",
   "ticket": {
-    "id": "CHAT-040",
-    "github_issue": 48,
-    "title": "Set up Auth.js with custom ServiceNow OAuth 2.0 provider"
+    "id": "CHAT-044",
+    "github_issue": 59,
+    "title": "Add development auth bypass with configurable AUTH_MODE"
   },
-  "branch": "feature/CHAT-040-auth-servicenow-oauth",
-  "pr_number": null,
-  "pr_url": null,
+  "branch": "feature/CHAT-044-dev-auth-bypass",
+  "pr_number": 60,
+  "pr_url": "https://github.com/amragl/itom-chat-ui/pull/60",
   "commits": 1,
   "files_changed": [
-    "frontend/package.json",
-    "frontend/package-lock.json",
     "frontend/.env.example",
+    "frontend/src/middleware.ts",
     "frontend/src/lib/auth.ts",
-    "frontend/src/lib/index.ts",
-    "frontend/src/types/auth.ts",
-    "frontend/src/types/index.ts",
-    "frontend/src/app/api/auth/[...nextauth]/route.ts",
+    "frontend/src/lib/api.ts",
     "frontend/src/app/layout.tsx",
+    "frontend/src/components/auth/DevModeBanner.tsx",
+    "frontend/src/components/auth/index.ts",
     "frontend/src/components/providers/SessionProvider.tsx",
-    "frontend/src/components/providers/index.ts"
+    "backend/.env.example",
+    "backend/app/config.py",
+    "backend/app/auth.py",
+    "backend/app/main.py"
   ],
   "self_check": {
     "compiles": true,
@@ -34,53 +36,17 @@
   },
   "error": null,
   "history": [
-    {
-      "ticket_id": "CHAT-001",
-      "status": "success",
-      "timestamp": "2026-02-13T10:15:00Z",
-      "pr_number": 40
-    },
-    {
-      "ticket_id": "CHAT-002",
-      "status": "success",
-      "timestamp": "2026-02-13T14:30:00Z",
-      "pr_number": null
-    },
-    {
-      "ticket_id": "CHAT-008",
-      "status": "success",
-      "timestamp": "2026-02-13T15:15:00Z",
-      "pr_number": null
-    },
-    {
-      "ticket_id": "CHAT-005",
-      "status": "success",
-      "timestamp": "2026-02-13T16:00:00Z",
-      "pr_number": null
-    },
-    {
-      "ticket_id": "CHAT-006",
-      "status": "success",
-      "timestamp": "2026-02-13T17:30:00Z",
-      "pr_number": null
-    },
-    {
-      "ticket_id": "CHAT-007",
-      "status": "success",
-      "timestamp": "2026-02-13T18:30:00Z",
-      "pr_number": null
-    },
-    {
-      "ticket_id": "CHAT-004",
-      "status": "success",
-      "timestamp": "2026-02-13T19:15:00Z",
-      "pr_number": null
-    },
-    {
-      "ticket_id": "CHAT-040",
-      "status": "success",
-      "timestamp": "2026-02-13T20:30:00Z",
-      "pr_number": null
-    }
+    { "ticket_id": "CHAT-001", "status": "success", "timestamp": "2026-02-13T10:15:00Z", "pr_number": 40 },
+    { "ticket_id": "CHAT-002", "status": "success", "timestamp": "2026-02-13T14:30:00Z", "pr_number": null },
+    { "ticket_id": "CHAT-008", "status": "success", "timestamp": "2026-02-13T15:15:00Z", "pr_number": null },
+    { "ticket_id": "CHAT-005", "status": "success", "timestamp": "2026-02-13T16:00:00Z", "pr_number": null },
+    { "ticket_id": "CHAT-006", "status": "success", "timestamp": "2026-02-13T17:30:00Z", "pr_number": null },
+    { "ticket_id": "CHAT-007", "status": "success", "timestamp": "2026-02-13T18:30:00Z", "pr_number": null },
+    { "ticket_id": "CHAT-004", "status": "success", "timestamp": "2026-02-13T19:15:00Z", "pr_number": null },
+    { "ticket_id": "CHAT-040", "status": "success", "timestamp": "2026-02-13T20:30:00Z", "pr_number": null },
+    { "ticket_id": "CHAT-010", "status": "success", "timestamp": "2026-02-13T14:10:00Z", "pr_number": 56 },
+    { "ticket_id": "CHAT-011", "status": "success", "timestamp": "2026-02-13T15:15:00Z", "pr_number": 57 },
+    { "ticket_id": "CHAT-014", "status": "success", "timestamp": "2026-02-13T16:15:00Z", "pr_number": 58 },
+    { "ticket_id": "CHAT-044", "status": "success", "timestamp": "2026-02-14T03:05:00Z", "pr_number": 60 }
   ]
 }

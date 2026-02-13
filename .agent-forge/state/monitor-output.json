@@ -1,1 +1,25 @@
-{}
+{
+  "status": "success",
+  "timestamp": "2026-02-14T03:12:00Z",
+  "agent": "monitor",
+  "ticket_id": "CHAT-044",
+  "schema_version": "1.0.0",
+  "health": {
+    "pr_status": "healthy",
+    "pr_mergeable": true,
+    "merge_state": "CLEAN",
+    "blocked_issues": 0,
+    "repository_health": "healthy"
+  },
+  "escalations": {
+    "to_plan": [],
+    "to_test": []
+  },
+  "alerts": [],
+  "notes": [
+    "PR #60 is OPEN, MERGEABLE, merge state CLEAN. No conflicts with main.",
+    "No blocked issues found in the repository.",
+    "All 5 pipeline steps (plan, build, validate, test, monitor) passed for CHAT-044.",
+    "Ready for auto-merge per project config (auto_merge.enabled=true, merge_strategy=squash)."
+  ]
+}

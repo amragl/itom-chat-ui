@@ -1,6 +1,6 @@
 {
   "project": "itom-chat-ui",
-  "updated_at": "2026-02-12T12:47:31Z",
+  "updated_at": "2026-02-13T23:35:00Z",
   "phases": [
     {
       "id": "phase-1",
@@ -37,7 +37,7 @@
       "name": "Chat Core",
       "description": "Core chat interface: message input, message display with bubbles, streaming response handling, agent routing and selection, FastAPI chat endpoint, and real-time WebSocket messaging.",
       "milestone": "Functional chat interface where users can send messages, see streaming responses, and select which ITOM agent to interact with.",
-      "status": "planned",
+      "status": "done",
       "tickets": [
         "CHAT-009",
         "CHAT-010",
@@ -263,14 +263,14 @@
       "phase": "phase-2",
       "priority": "critical",
       "type": "feature",
-      "status": "planned",
+      "status": "done",
       "dependencies": [
         "CHAT-004"
       ],
       "assigned_agent": "build",
       "estimated_complexity": "medium",
-      "pr_number": null,
-      "completed_at": null
+      "pr_number": 58,
+      "completed_at": "2026-02-13T23:30:00Z"
     },
     {
       "id": "CHAT-010",
@@ -280,15 +280,15 @@
       "phase": "phase-2",
       "priority": "critical",
       "type": "feature",
-      "status": "planned",
+      "status": "done",
       "dependencies": [
         "CHAT-004",
         "CHAT-008"
       ],
       "assigned_agent": "build",
       "estimated_complexity": "large",
-      "pr_number": null,
-      "completed_at": null
+      "pr_number": 56,
+      "completed_at": "2026-02-13T23:00:00Z"
     },
     {
       "id": "CHAT-011",
@@ -298,15 +298,15 @@
       "phase": "phase-2",
       "priority": "high",
       "type": "feature",
-      "status": "planned",
+      "status": "done",
       "dependencies": [
         "CHAT-010",
         "CHAT-006"
       ],
       "assigned_agent": "build",
       "estimated_complexity": "large",
-      "pr_number": null,
-      "completed_at": null
+      "pr_number": 57,
+      "completed_at": "2026-02-13T23:15:00Z"
     },
     {
       "id": "CHAT-012",
@@ -316,15 +316,15 @@
       "phase": "phase-2",
       "priority": "high",
       "type": "feature",
-      "status": "planned",
+      "status": "done",
       "dependencies": [
         "CHAT-008",
         "CHAT-003"
       ],
       "assigned_agent": "build",
       "estimated_complexity": "medium",
-      "pr_number": null,
-      "completed_at": null
+      "pr_number": 58,
+      "completed_at": "2026-02-13T23:30:00Z"
     },
     {
       "id": "CHAT-013",
@@ -334,15 +334,15 @@
       "phase": "phase-2",
       "priority": "critical",
       "type": "feature",
-      "status": "planned",
+      "status": "done",
       "dependencies": [
         "CHAT-003",
         "CHAT-005"
       ],
       "assigned_agent": "build",
       "estimated_complexity": "large",
-      "pr_number": null,
-      "completed_at": null
+      "pr_number": 58,
+      "completed_at": "2026-02-13T23:30:00Z"
     },
     {
       "id": "CHAT-014",
@@ -352,7 +352,7 @@
       "phase": "phase-2",
       "priority": "critical",
       "type": "feature",
-      "status": "planned",
+      "status": "done",
       "dependencies": [
         "CHAT-009",
         "CHAT-010",
@@ -362,8 +362,23 @@
       ],
       "assigned_agent": "build",
       "estimated_complexity": "large",
-      "pr_number": null,
-      "completed_at": null
+      "pr_number": 58,
+      "completed_at": "2026-02-13T23:30:00Z"
+    },
+    {
+      "id": "CHAT-044",
+      "github_issue": 59,
+      "title": "Add development auth bypass with configurable AUTH_MODE",
+      "description": "Add AUTH_MODE env var (sso|dev). When dev: frontend middleware skips auth, backend API skips Bearer token validation, dev user injected into session. When sso: existing OAuth flow unchanged. Visual indicator in UI when running in dev mode.",
+      "phase": "phase-1b",
+      "priority": "critical",
+      "type": "feature",
+      "status": "done",
+      "dependencies": [],
+      "assigned_agent": "build",
+      "estimated_complexity": "small",
+      "pr_number": 60,
+      "completed_at": "2026-02-14T03:12:00Z"
     },
     {
       "id": "CHAT-015",

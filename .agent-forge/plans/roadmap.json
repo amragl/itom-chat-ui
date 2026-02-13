@@ -2,13 +2,13 @@
   "project": "itom-chat-ui",
   "vision": "Conversational interface for human interaction with ITOM agents -- chat history, artifact viewer, conversation memory, agent selection, status monitoring.",
   "created_at": "2026-02-12T22:00:00Z",
-  "updated_at": "2026-02-12T22:00:00Z",
+  "updated_at": "2026-02-13T23:35:00Z",
   "phases": [
     {
       "id": "phase-1",
       "name": "Foundation",
       "description": "Project structure, Next.js setup, TailwindCSS, FastAPI backend, basic layout shell, environment configuration, WebSocket infrastructure, and development tooling.",
-      "status": "active",
+      "status": "completed",
       "order": 1,
       "milestones": [
         {
@@ -16,25 +16,51 @@
           "name": "Frontend and Backend Scaffold",
           "description": "Running Next.js frontend and FastAPI backend with basic layout shell, WebSocket connectivity, and hot-reload development environment.",
           "target_date": null,
-          "completed_date": null,
-          "status": "in-progress"
+          "completed_date": "2026-02-13T13:25:00Z",
+          "status": "done"
         }
       ],
       "progress": {
         "total_tickets": 8,
-        "completed": 0,
+        "completed": 8,
         "in_progress": 0,
         "bugs_found": 0,
         "bugs_fixed": 0,
         "improvements_proposed": 0,
-        "percentage": 0
+        "percentage": 100
+      }
+    },
+    {
+      "id": "phase-1b",
+      "name": "Authentication",
+      "description": "ServiceNow OAuth 2.0 SSO integration. Users authenticate via their ServiceNow instance credentials using authorization code flow. Auth.js on frontend, FastAPI middleware on backend, protected routes, and user profile display.",
+      "status": "completed",
+      "order": 1.5,
+      "milestones": [
+        {
+          "id": "M-1b",
+          "name": "ServiceNow OAuth SSO",
+          "description": "Users can sign in with their ServiceNow credentials via OAuth SSO. Protected routes redirect to login. User name, avatar, and role displayed in sidebar.",
+          "target_date": null,
+          "completed_date": "2026-02-13T22:30:00Z",
+          "status": "done"
+        }
+      ],
+      "progress": {
+        "total_tickets": 4,
+        "completed": 4,
+        "in_progress": 0,
+        "bugs_found": 0,
+        "bugs_fixed": 0,
+        "improvements_proposed": 0,
+        "percentage": 100
       }
     },
     {
       "id": "phase-2",
       "name": "Chat Core",
       "description": "Core chat interface: message input, message display with bubbles, streaming response handling, agent routing and selection, FastAPI chat endpoint, and real-time WebSocket messaging.",
-      "status": "planned",
+      "status": "completed",
       "order": 2,
       "milestones": [
         {
@@ -42,18 +68,18 @@
           "name": "Functional Chat Interface",
           "description": "Functional chat interface where users can send messages, see streaming responses, and select which ITOM agent to interact with.",
           "target_date": null,
-          "completed_date": null,
-          "status": "todo"
+          "completed_date": "2026-02-13T23:30:00Z",
+          "status": "done"
         }
       ],
       "progress": {
         "total_tickets": 6,
-        "completed": 0,
+        "completed": 6,
         "in_progress": 0,
         "bugs_found": 0,
         "bugs_fixed": 0,
         "improvements_proposed": 0,
-        "percentage": 0
+        "percentage": 100
       }
     },
     {
@@ -188,13 +214,13 @@
     }
   ],
   "summary": {
-    "total_phases": 7,
-    "completed_phases": 0,
-    "total_tickets": 39,
-    "completed_tickets": 0,
+    "total_phases": 8,
+    "completed_phases": 3,
+    "total_tickets": 43,
+    "completed_tickets": 18,
     "total_bugs": 0,
     "open_bugs": 0,
-    "overall_percentage": 0,
-    "velocity_tickets_per_week": 0
+    "overall_percentage": 42,
+    "velocity_tickets_per_week": 18
   }
 }

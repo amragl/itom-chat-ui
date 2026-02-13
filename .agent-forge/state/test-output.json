@@ -1,1 +1,48 @@
-{}
+{
+  "status": "success",
+  "timestamp": "2026-02-14T03:10:00Z",
+  "agent": "test",
+  "ticket_id": "CHAT-044",
+  "schema_version": "1.0.0",
+  "output": {
+    "results": {
+      "total": 6,
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0
+    },
+    "tests": [
+      {
+        "name": "Python syntax validation",
+        "status": "passed",
+        "details": "All backend Python files compile cleanly: auth.py (with DEV_USER and auth_mode check), config.py (with auth_mode field_validator), main.py (with auth mode logging)."
+      },
+      {
+        "name": "Backend auth_mode config validation",
+        "status": "passed",
+        "details": "Settings.auth_mode field_validator correctly normalizes 'sso'/'dev' to lowercase and rejects invalid values. Default is 'sso'."
+      },
+      {
+        "name": "Dev user consistency check",
+        "status": "passed",
+        "details": "Frontend DEV_USER_PROFILE.sysId ('dev-000000000000000000000000000000') matches backend DEV_USER.sys_id ('dev-000000000000000000000000000000'). Roles match: ['admin', 'itil']."
+      },
+      {
+        "name": "Middleware dev mode bypass",
+        "status": "passed",
+        "details": "When AUTH_MODE=dev, middleware returns NextResponse.next() immediately without checking session cookies. When AUTH_MODE=sso, existing cookie check and redirect logic is preserved."
+      },
+      {
+        "name": "SSO code path regression check",
+        "status": "passed",
+        "details": "All existing SSO code paths are unchanged: ServiceNow OAuth provider config, JWT callback (non-dev branch), session callback, token validation in backend auth.py (non-dev branch), and api.ts Bearer token attachment (non-dev branch)."
+      },
+      {
+        "name": "Zero-mock compliance",
+        "status": "passed",
+        "details": "Scanned all 12 changed files. DEV_USER/DEV_USER_PROFILE are legitimate dev-mode bypass constants gated behind AUTH_MODE=dev, not mock data. No placeholder functions, stub implementations, or hardcoded secrets detected."
+      }
+    ],
+    "regressions": []
+  }
+}
