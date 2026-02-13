@@ -3,6 +3,7 @@
  *
  * Import from "@/lib" to access:
  *   import { apiClient, ApiError } from "@/lib";
+ *   import { auth, signIn, signOut } from "@/lib";
  */
 
 export { apiClient, ApiError } from './api';
@@ -17,3 +18,4 @@ export {
   listAgents,
   getAgent,
 } from './api';
+export { auth, signIn, signOut, authConfig } from './auth';

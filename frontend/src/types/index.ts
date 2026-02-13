@@ -18,3 +18,4 @@ export type {
   WebSocketErrorPayload,
   WebSocketHeartbeatPayload,
 } from './websocket';
+export type { ServiceNowUser, ServiceNowRoles } from './auth';
