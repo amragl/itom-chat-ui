@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     debug: bool = False
     log_level: str = "INFO"
     cors_origins: list[str] = ["http://localhost:3000"]
+    http_host: str = "0.0.0.0"
+    http_port: int = 8001
     orchestrator_url: str = "http://localhost:8000"
     database_url: str = "sqlite:///./chat.db"
 

@@ -6,13 +6,14 @@
   "scripts": {
     "dev": "concurrently -n frontend,backend -c cyan,magenta \"npm run dev:frontend\" \"npm run dev:backend\"",
     "dev:frontend": "cd frontend && npm run dev",
-    "dev:backend": "cd backend && .venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
+    "dev:backend": "cd backend && .venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 8001",
     "lint": "cd frontend && npm run lint",
     "lint:fix": "cd frontend && npm run lint:fix",
     "format": "cd frontend && npm run format",
     "format:check": "cd frontend && npm run format:check",
     "typecheck": "cd frontend && npm run typecheck",
-    "build": "cd frontend && npm run build"
+    "build": "cd frontend && npm run build",
+    "start:system": "bash scripts/start-system.sh"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

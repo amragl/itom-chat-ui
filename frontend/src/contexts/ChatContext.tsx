@@ -11,6 +11,7 @@ import {
 } from 'react';
 import type { Agent, Message, WebSocketChatPayload, WebSocketMessage } from '@/types';
 import { apiClient } from '@/lib/api';
+import { buildHelpText, buildPrompt, parseCommand } from '@/lib/commands';
 import { useStreamingResponse } from '@/hooks/useStreamingResponse';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import type { ConnectionStatus } from '@/hooks/useWebSocket';
@@ -294,6 +295,87 @@ export function ChatProvider({ children }: ChatProviderProps) {
 
       const convId = conversationIdRef.current;
 
+      // --- Slash command handling ---
+      const parsed = parseCommand(content);
+      if (parsed) {
+        const { command, args } = parsed;
+
+        // Client-side commands: handle locally without hitting the backend
+        if (command.agentTarget === null) {
+          if (command.name === '/clear') {
+            setMessages([]);
+            return;
+          }
+          if (command.name === '/help') {
+            const helpMessage: Message = {
+              id: `help-${Date.now()}`,
+              role: 'assistant',
+              content: buildHelpText(),
+              timestamp: new Date().toISOString(),
+            };
+            setMessages((prev) => [...prev, helpMessage]);
+            return;
+          }
+          if (command.name === '/export') {
+            const format = args || 'json';
+            const data = JSON.stringify(
+              messages.map((m) => ({
+                role: m.role,
+                content: m.content,
+                timestamp: m.timestamp,
+                agentId: m.agentId,
+              })),
+              null,
+              2,
+            );
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `conversation-${convId}.${format === 'json' ? 'json' : 'txt'}`;
+            a.click();
+            URL.revokeObjectURL(url);
+            const exportMsg: Message = {
+              id: `export-${Date.now()}`,
+              role: 'assistant',
+              content: `Conversation exported as ${format}.`,
+              timestamp: new Date().toISOString(),
+            };
+            setMessages((prev) => [...prev, exportMsg]);
+            return;
+          }
+          // Unknown client-side command — fall through to normal send
+        }
+
+        // Agent commands: transform to natural language and route to agent
+        if (command.agentTarget) {
+          const prompt = buildPrompt(command, args);
+
+          // Show the original command as the user message
+          const userMessage: Message = {
+            id: `user-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            role: 'user',
+            content,
+            timestamp: new Date().toISOString(),
+          };
+          setMessages((prev) => [...prev, userMessage]);
+          setIsLoading(true);
+          setError(null);
+
+          wsSendMessage({
+            type: 'chat',
+            payload: { conversationId: convId, content, role: 'user' },
+          });
+
+          // Route to the command's target agent
+          startStreaming(prompt, convId, command.agentTarget);
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // --- Normal message flow (no slash command) ---
+
       // Add the user message to the local message list immediately
       const userMessage: Message = {
         id: `user-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -321,7 +403,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
       startStreaming(content, convId, agentTarget);
       setIsLoading(false);
     },
-    [isLoading, isStreaming, selectedAgentId, startStreaming, wsSendMessage],
+    [isLoading, isStreaming, messages, selectedAgentId, startStreaming, wsSendMessage],
   );
 
   const selectAgent = useCallback((agentId: string | null) => {

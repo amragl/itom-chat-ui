@@ -57,43 +57,79 @@ class ChatResponse(BaseModel):
 
 
 class OrchestratorRequest(BaseModel):
-    """Payload sent to the itom-orchestrator MCP server.
+    """Payload sent to the itom-orchestrator HTTP API.
 
-    Wraps the user message with conversation context so the orchestrator can
-    make informed routing and response decisions.
+    Matches the orchestrator's ChatRequest schema:
+      message, target_agent, domain, context (dict), session_id.
     """
 
     message: str = Field(..., description="The user's message content")
-    conversation_id: str | None = Field(
-        default=None, description="Conversation ID for context continuity"
-    )
-    agent_target: str | None = Field(
+    target_agent: str | None = Field(
         default=None, description="Preferred agent, or null for auto-routing"
     )
-    context: list[dict[str, Any]] = Field(
-        default_factory=list,
-        description="Previous messages in the conversation for context",
+    domain: str | None = Field(
+        default=None, description="Domain hint for routing (cmdb, discovery, etc.)"
     )
-    user: dict[str, str] = Field(
+    context: dict[str, Any] = Field(
         default_factory=dict,
-        description="Authenticated user info (sys_id, user_name, name)",
+        description="Session context passed to the agent",
+    )
+    session_id: str | None = Field(
+        default=None, description="Session/conversation ID for continuity"
     )
 
 
 class OrchestratorResponse(BaseModel):
     """Expected response structure from the itom-orchestrator.
 
-    The orchestrator returns the agent's reply along with metadata about
-    which agent handled it and processing details.
+    Matches the orchestrator's ChatResponse schema:
+    message_id, status, agent_id, agent_name, domain, response (dict),
+    routing_method, timestamp, session_id.
     """
 
-    content: str = Field(..., description="The agent's response text")
+    message_id: str = Field(..., description="Unique ID for this response")
+    status: str = Field(..., description="Response status (success, error)")
     agent_id: str = Field(..., description="ID of the agent that processed the request")
     agent_name: str = Field(..., description="Display name of the responding agent")
-    conversation_id: str | None = Field(
-        default=None, description="Conversation ID (may be newly created)"
+    domain: str = Field(..., description="Domain the message was routed to")
+    response: dict[str, Any] = Field(
+        ..., description="Nested response with result and routing info"
     )
-    metadata: dict[str, Any] = Field(
-        default_factory=dict,
-        description="Additional response metadata",
+    routing_method: str = Field(..., description="How the message was routed")
+    timestamp: str = Field(..., description="When the response was generated")
+    session_id: str | None = Field(
+        default=None, description="Session/conversation ID"
     )
+
+    @property
+    def content(self) -> str:
+        """Extract the displayable text from the nested response."""
+        result = self.response.get("result", {})
+        if isinstance(result, dict):
+            if "agent_response" in result:
+                return result["agent_response"]
+            if "dispatched_to" in result:
+                agent = result.get("dispatched_to", "unknown")
+                return (
+                    f"Message received by {agent}. "
+                    "The agent acknowledged the request."
+                )
+            if result:
+                import json
+                return json.dumps(result, indent=2)
+        return f"Response from {self.agent_name} (status: {self.status})"
+
+    @property
+    def conversation_id(self) -> str | None:
+        """Map session_id to conversation_id for the chat backend."""
+        return self.session_id
+
+    @property
+    def metadata(self) -> dict[str, Any]:
+        """Extract metadata from the nested response."""
+        return {
+            "routing_method": self.routing_method,
+            "domain": self.domain,
+            "tool_used": self.response.get("result", {}).get("tool_used"),
+            "source": self.response.get("result", {}).get("source"),
+        }

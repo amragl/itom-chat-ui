@@ -1,12 +1,12 @@
 """Streaming chat service that proxies requests to the ITOM orchestrator.
 
 This service manages the Server-Sent Event (SSE) lifecycle for a single
-streaming chat interaction:
+chat interaction:
 
 1. Accept the user message and target agent.
 2. Forward to the ITOM orchestrator endpoint.
-3. Stream the orchestrator's response back as SSE token events.
-4. Emit a ``stream_end`` event with the complete assembled response.
+3. Parse the orchestrator's JSON response.
+4. Emit SSE events (stream_start, token, stream_end) to the client.
 
 If the orchestrator is unreachable, the service emits an ``error`` SSE event
 so the client can surface the failure gracefully.
@@ -32,7 +32,7 @@ async def stream_chat_response(
     conversation_id: str,
     agent_target: str | None = None,
 ) -> AsyncGenerator[str, None]:
-    """Yield SSE-formatted strings for a streaming chat interaction.
+    """Yield SSE-formatted strings for a chat interaction.
 
     Each yielded string is a complete SSE message (``data: ...\\n\\n``) that
     the client can parse according to the EventSource specification.
@@ -61,79 +61,92 @@ async def stream_chat_response(
     }
     yield f"data: {json.dumps(start_event)}\n\n"
 
-    # Build the request payload for the orchestrator
+    # Build the request payload for the orchestrator.
     orchestrator_payload = {
-        "content": content,
-        "conversation_id": conversation_id,
-        "agent_target": agent_target,
-        "stream": True,
+        "message": content,
+        "target_agent": agent_target,
+        "session_id": conversation_id,
     }
-
-    accumulated_content = ""
 
     try:
         async with httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=10.0)) as client:
-            orchestrator_url = f"{settings.orchestrator_url}/api/chat/stream"
+            orchestrator_url = f"{settings.orchestrator_url}/api/chat"
             logger.info(
-                "Streaming request to orchestrator: %s (agent=%s, conversation=%s)",
+                "Sending request to orchestrator: %s (agent=%s, conversation=%s)",
                 orchestrator_url,
                 agent_id,
                 conversation_id,
             )
 
-            async with client.stream(
-                "POST",
-                orchestrator_url,
-                json=orchestrator_payload,
-            ) as response:
-                if response.status_code != 200:
-                    error_body = await response.aread()
-                    logger.error(
-                        "Orchestrator returned status %d: %s",
-                        response.status_code,
-                        error_body.decode("utf-8", errors="replace")[:500],
-                    )
-                    error_event = {
-                        "event": "error",
-                        "data": {
-                            "code": "ORCHESTRATOR_ERROR",
-                            "message": (
-                                f"Orchestrator returned HTTP {response.status_code}. "
-                                "The service may be temporarily unavailable."
-                            ),
-                        },
-                    }
-                    yield f"data: {json.dumps(error_event)}\n\n"
-                    return
+            response = await client.post(orchestrator_url, json=orchestrator_payload)
 
-                # Stream tokens from the orchestrator response
-                async for line in response.aiter_lines():
-                    if not line:
-                        continue
+            if response.status_code != 200:
+                logger.error(
+                    "Orchestrator returned status %d: %s",
+                    response.status_code,
+                    response.text[:500],
+                )
+                error_event = {
+                    "event": "error",
+                    "data": {
+                        "code": "ORCHESTRATOR_ERROR",
+                        "message": (
+                            f"Orchestrator returned HTTP {response.status_code}. "
+                            "The service may be temporarily unavailable."
+                        ),
+                    },
+                }
+                yield f"data: {json.dumps(error_event)}\n\n"
+                return
 
-                    # The orchestrator sends SSE-format lines prefixed with "data: "
-                    if line.startswith("data: "):
-                        raw_data = line[6:]
-                    else:
-                        raw_data = line
+            # Parse the orchestrator's JSON response.
+            # The response structure is:
+            # {
+            #   "message_id": "...",
+            #   "status": "success",
+            #   "agent_id": "cmdb-agent",
+            #   "agent_name": "CMDB Agent",
+            #   "domain": "cmdb",
+            #   "response": {
+            #     "task_id": "...",
+            #     "result": {
+            #       "agent_response": "actual text content...",
+            #       "tool_used": "...",
+            #       ...
+            #     },
+            #     "routing": {...}
+            #   },
+            #   ...
+            # }
+            try:
+                orch_data = response.json()
+            except Exception:
+                logger.error("Failed to parse orchestrator JSON response")
+                error_event = {
+                    "event": "error",
+                    "data": {
+                        "code": "ORCHESTRATOR_PARSE_ERROR",
+                        "message": "Failed to parse orchestrator response.",
+                    },
+                }
+                yield f"data: {json.dumps(error_event)}\n\n"
+                return
 
-                    try:
-                        chunk = json.loads(raw_data)
-                    except json.JSONDecodeError:
-                        # Treat non-JSON lines as raw text tokens
-                        chunk = {"token": raw_data}
+            # Extract the actual content from the nested response
+            agent_response_text = _extract_content(orch_data)
+            actual_agent_id = orch_data.get("agent_id", agent_id)
+            actual_agent_name = orch_data.get("agent_name", "Agent")
 
-                    token_text = chunk.get("token", chunk.get("content", ""))
-                    if token_text:
-                        accumulated_content += token_text
-                        token_event = {
-                            "event": "token",
-                            "data": {
-                                "token": token_text,
-                                "message_id": message_id,
-                            },
-                        }
-                        yield f"data: {json.dumps(token_event)}\n\n"
+            # Emit the full response as a single token event
+            if agent_response_text:
+                token_event = {
+                    "event": "token",
+                    "data": {
+                        "token": agent_response_text,
+                        "message_id": message_id,
+                    },
+                }
+                yield f"data: {json.dumps(token_event)}\n\n"
 
     except httpx.ConnectError:
         logger.error(
@@ -166,12 +179,12 @@ async def stream_chat_response(
         return
 
     except Exception:
-        logger.exception("Unexpected error during streaming for conversation %s", conversation_id)
+        logger.exception("Unexpected error during chat for conversation %s", conversation_id)
         error_event = {
             "event": "error",
             "data": {
                 "code": "STREAM_INTERNAL_ERROR",
-                "message": "An unexpected error occurred during streaming.",
+                "message": "An unexpected error occurred.",
             },
         }
         yield f"data: {json.dumps(error_event)}\n\n"
@@ -182,8 +195,9 @@ async def stream_chat_response(
         "event": "stream_end",
         "data": {
             "message_id": message_id,
-            "full_content": accumulated_content,
-            "agent_id": agent_id,
+            "full_content": agent_response_text or "",
+            "agent_id": actual_agent_id,
+            "agent_name": actual_agent_name,
             "conversation_id": conversation_id,
             "timestamp": datetime.now(UTC).isoformat(),
         },
@@ -191,8 +205,46 @@ async def stream_chat_response(
     yield f"data: {json.dumps(end_event)}\n\n"
 
     logger.info(
-        "Stream completed for message %s (conversation=%s, length=%d)",
+        "Chat completed for message %s (conversation=%s, agent=%s, length=%d)",
         message_id,
         conversation_id,
-        len(accumulated_content),
+        actual_agent_id,
+        len(agent_response_text or ""),
     )
+
+
+def _extract_content(orch_data: dict) -> str:
+    """Extract the displayable text content from an orchestrator response.
+
+    Tries several paths to find the agent's actual response text:
+    1. response.result.agent_response  (dispatch handler result)
+    2. response.result.dispatched_to   (default stub)
+    3. Flat string fallback
+    """
+    resp = orch_data.get("response", {})
+    if isinstance(resp, dict):
+        result = resp.get("result", {})
+        if isinstance(result, dict):
+            # Real agent response from dispatch handler
+            if "agent_response" in result:
+                return result["agent_response"]
+            # Default stub response
+            if "dispatched_to" in result:
+                agent = result.get("dispatched_to", "unknown")
+                return (
+                    f"Message received by {agent}. "
+                    "The agent acknowledged the request but no detailed response "
+                    "was returned. This may mean the agent's MCP server is not "
+                    "running or not connected."
+                )
+            # Generic result with some data
+            if result:
+                return json.dumps(result, indent=2)
+        # response is a dict but no result key
+        if resp:
+            return json.dumps(resp, indent=2)
+
+    # Fallback: status message
+    status = orch_data.get("status", "unknown")
+    agent = orch_data.get("agent_name", orch_data.get("agent_id", "unknown"))
+    return f"Response from {agent} (status: {status})"

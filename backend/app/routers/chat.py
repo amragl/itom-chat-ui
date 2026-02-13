@@ -70,13 +70,12 @@ async def send_chat_message(
     # Build the orchestrator request with user context
     orch_request = OrchestratorRequest(
         message=request.content,
-        conversation_id=request.conversation_id,
-        agent_target=request.agent_target,
-        context=[],  # Context assembly will be enhanced when persistence is added (CHAT-015)
-        user={
-            "sys_id": current_user.sys_id,
+        target_agent=request.agent_target,
+        session_id=request.conversation_id,
+        context={
+            "user_sys_id": current_user.sys_id,
             "user_name": current_user.user_name,
-            "name": current_user.name,
+            "user_display_name": current_user.name,
         },
     )
 
