@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
+import { UserMenu } from '@/components/auth';
 
 /**
  * Navigation items rendered in the sidebar. Each entry maps to a top-level
@@ -146,6 +147,11 @@ export default function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
         <div className="flex-1 overflow-y-auto px-2">
           {/* Conversation list items will be rendered here in Phase 3 */}
         </div>
+      </div>
+
+      {/* User menu */}
+      <div className="shrink-0 border-t border-neutral-200 px-2 py-2 dark:border-neutral-700">
+        <UserMenu collapsed={collapsed} />
       </div>
 
       {/* Collapse toggle */}

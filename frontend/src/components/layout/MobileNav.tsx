@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
+import { UserMenu } from '@/components/auth';
 
 /**
  * Navigation items for mobile drawer. Kept in sync with Sidebar.tsx.
@@ -213,6 +214,11 @@ export default function MobileNav({ open, onClose }: MobileNavProps) {
           <div className="flex-1 overflow-y-auto px-2">
             {/* Conversation list items will be rendered here in Phase 3 */}
           </div>
+        </div>
+
+        {/* User menu at bottom of mobile drawer */}
+        <div className="shrink-0 border-t border-neutral-200 px-2 py-2 dark:border-neutral-700">
+          <UserMenu />
         </div>
       </div>
     </>
