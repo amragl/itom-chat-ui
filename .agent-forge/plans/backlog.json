@@ -1,6 +1,799 @@
 {
   "project": "itom-chat-ui",
-  "updated_at": "2026-02-12T21:45:00Z",
-  "phases": [],
-  "tickets": []
+  "updated_at": "2026-02-12T12:47:31Z",
+  "phases": [
+    {
+      "id": "phase-1",
+      "name": "Foundation",
+      "description": "Project structure, Next.js setup, TailwindCSS, FastAPI backend, basic layout shell, environment configuration, WebSocket infrastructure, and development tooling.",
+      "milestone": "Running Next.js frontend and FastAPI backend with basic layout shell, WebSocket connectivity, and hot-reload development environment.",
+      "status": "active",
+      "tickets": [
+        "CHAT-001",
+        "CHAT-002",
+        "CHAT-003",
+        "CHAT-004",
+        "CHAT-005",
+        "CHAT-006",
+        "CHAT-007",
+        "CHAT-008"
+      ]
+    },
+    {
+      "id": "phase-2",
+      "name": "Chat Core",
+      "description": "Core chat interface: message input, message display with bubbles, streaming response handling, agent routing and selection, FastAPI chat endpoint, and real-time WebSocket messaging.",
+      "milestone": "Functional chat interface where users can send messages, see streaming responses, and select which ITOM agent to interact with.",
+      "status": "planned",
+      "tickets": [
+        "CHAT-009",
+        "CHAT-010",
+        "CHAT-011",
+        "CHAT-012",
+        "CHAT-013",
+        "CHAT-014"
+      ]
+    },
+    {
+      "id": "phase-3",
+      "name": "Conversation Management",
+      "description": "Persistent conversation storage, conversation list sidebar, search across conversations, context and memory persistence, and conversation export capabilities.",
+      "milestone": "Users can create, browse, search, and resume conversations with persistent context across sessions.",
+      "status": "planned",
+      "tickets": [
+        "CHAT-015",
+        "CHAT-016",
+        "CHAT-017",
+        "CHAT-018",
+        "CHAT-019"
+      ]
+    },
+    {
+      "id": "phase-4",
+      "name": "Artifact Viewer",
+      "description": "Inline viewing of audit reports, compliance documents, health dashboards, and other artifacts produced by ITOM agents. Detection, parsing, rendering, and export.",
+      "milestone": "Artifacts produced by agents (reports, dashboards, documents) render inline in the chat with export and download options.",
+      "status": "planned",
+      "tickets": [
+        "CHAT-020",
+        "CHAT-021",
+        "CHAT-022",
+        "CHAT-023",
+        "CHAT-024"
+      ]
+    },
+    {
+      "id": "phase-5",
+      "name": "Status Dashboard",
+      "description": "Real-time agent status panel, workflow progress tracking, health metrics display, WebSocket-based live updates, and dashboard layout with navigation.",
+      "milestone": "Live dashboard showing agent statuses, workflow progress, and health metrics with real-time updates via WebSocket.",
+      "status": "planned",
+      "tickets": [
+        "CHAT-025",
+        "CHAT-026",
+        "CHAT-027",
+        "CHAT-028",
+        "CHAT-029"
+      ]
+    },
+    {
+      "id": "phase-6",
+      "name": "Polish and UX",
+      "description": "Responsive design for mobile and tablet, keyboard shortcuts, theme system with light and dark modes, accessibility compliance, and polished loading and error states.",
+      "milestone": "Fully responsive, accessible, and polished UI with keyboard navigation, theme switching, and graceful error handling.",
+      "status": "planned",
+      "tickets": [
+        "CHAT-030",
+        "CHAT-031",
+        "CHAT-032",
+        "CHAT-033",
+        "CHAT-034"
+      ]
+    },
+    {
+      "id": "phase-7",
+      "name": "Testing and Documentation",
+      "description": "Comprehensive test coverage with React Testing Library unit tests, FastAPI integration tests, Playwright E2E tests, OpenAPI documentation, and user guide.",
+      "milestone": "Full test suite passing with coverage targets met, auto-generated API docs, and user-facing documentation.",
+      "status": "planned",
+      "tickets": [
+        "CHAT-035",
+        "CHAT-036",
+        "CHAT-037",
+        "CHAT-038",
+        "CHAT-039"
+      ]
+    }
+  ],
+  "tickets": [
+    {
+      "id": "CHAT-001",
+      "github_issue": 1,
+      "title": "Initialize Next.js project with TypeScript and app router",
+      "description": "Create the Next.js 14+ project with TypeScript, app router, and proper tsconfig. Set up the src/ directory structure with app/, components/, lib/, types/, and hooks/ directories. Configure path aliases (@/ for src/). Include .gitignore for node_modules, .next, and env files.",
+      "phase": "phase-1",
+      "priority": "critical",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [],
+      "assigned_agent": "build",
+      "estimated_complexity": "medium",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-002",
+      "github_issue": 2,
+      "title": "Configure TailwindCSS with design system tokens",
+      "description": "Install and configure TailwindCSS v3+ with PostCSS. Define design system tokens in tailwind.config.ts: color palette (primary, secondary, accent, neutral, success, warning, error), typography scale, spacing scale, border radius, and shadow levels. Create a globals.css with base styles and CSS custom properties for theming.",
+      "phase": "phase-1",
+      "priority": "high",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [
+        "CHAT-001"
+      ],
+      "assigned_agent": "build",
+      "estimated_complexity": "small",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-003",
+      "github_issue": 3,
+      "title": "Set up FastAPI backend with project structure",
+      "description": "Create the Python FastAPI backend in a backend/ directory. Set up the project structure: backend/app/main.py (FastAPI app), backend/app/routers/ (API route modules), backend/app/models/ (Pydantic models), backend/app/services/ (business logic), backend/app/config.py (settings via pydantic-settings). Include requirements.txt or pyproject.toml with FastAPI, uvicorn, pydantic, and websockets dependencies. Add a health check endpoint at GET /api/health.",
+      "phase": "phase-1",
+      "priority": "critical",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [],
+      "assigned_agent": "build",
+      "estimated_complexity": "medium",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-004",
+      "github_issue": 4,
+      "title": "Create application layout shell with sidebar and main content area",
+      "description": "Build the root layout component with a responsive sidebar (collapsible) and main content area. Sidebar contains: logo/title, navigation links (Chat, Dashboard, Settings), and a conversation list area (placeholder). Main content area uses a flex layout that fills available space. Use TailwindCSS for all styling. The layout must work on desktop (sidebar visible) and mobile (sidebar as drawer).",
+      "phase": "phase-1",
+      "priority": "high",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [
+        "CHAT-001",
+        "CHAT-002"
+      ],
+      "assigned_agent": "build",
+      "estimated_complexity": "medium",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-005",
+      "github_issue": 5,
+      "title": "Configure environment variables and CORS settings",
+      "description": "Set up environment variable management for both frontend and backend. Frontend: .env.local with NEXT_PUBLIC_API_URL, NEXT_PUBLIC_WS_URL. Backend: .env with ORCHESTRATOR_URL, CORS_ORIGINS, LOG_LEVEL, DATABASE_URL (SQLite path for local dev). Configure CORS middleware in FastAPI to allow the Next.js frontend origin. Create .env.example files for both. Ensure .env files are in .gitignore.",
+      "phase": "phase-1",
+      "priority": "high",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [
+        "CHAT-001",
+        "CHAT-003"
+      ],
+      "assigned_agent": "build",
+      "estimated_complexity": "small",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-006",
+      "github_issue": 6,
+      "title": "Implement WebSocket infrastructure for real-time communication",
+      "description": "Set up WebSocket support on both frontend and backend. Backend: Create a WebSocket endpoint at /ws that handles connection lifecycle (connect, disconnect, message). Implement a connection manager class to track active connections and broadcast messages. Frontend: Create a useWebSocket React hook that manages connection state, auto-reconnect with exponential backoff, and message serialization/deserialization (JSON). The hook should expose: connectionStatus, sendMessage, lastMessage, and reconnect.",
+      "phase": "phase-1",
+      "priority": "high",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [
+        "CHAT-003",
+        "CHAT-001"
+      ],
+      "assigned_agent": "build",
+      "estimated_complexity": "large",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-007",
+      "github_issue": 7,
+      "title": "Set up development tooling: ESLint, Prettier, and concurrent dev servers",
+      "description": "Configure ESLint with TypeScript rules and React hooks plugin. Set up Prettier for consistent formatting. Create a root-level dev script (using concurrently or similar) that starts both the Next.js dev server and the FastAPI uvicorn server simultaneously. Add lint and format scripts to package.json. Configure .eslintrc.json and .prettierrc.",
+      "phase": "phase-1",
+      "priority": "medium",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [
+        "CHAT-001",
+        "CHAT-003"
+      ],
+      "assigned_agent": "build",
+      "estimated_complexity": "small",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-008",
+      "github_issue": 8,
+      "title": "Create shared TypeScript type definitions and API client",
+      "description": "Define core TypeScript interfaces in src/types/: Message (id, role, content, timestamp, agentId, artifacts), Conversation (id, title, messages, createdAt, updatedAt, agentId), Agent (id, name, description, status, icon), Artifact (id, type, title, content, metadata), HealthStatus, WebSocketMessage. Create an API client module in src/lib/api.ts using fetch with proper error handling, base URL configuration, and typed response helpers. This is the single point of contact for all backend API calls.",
+      "phase": "phase-1",
+      "priority": "high",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [
+        "CHAT-001"
+      ],
+      "assigned_agent": "build",
+      "estimated_complexity": "medium",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-009",
+      "github_issue": 9,
+      "title": "Build message input component with send button and auto-resize",
+      "description": "Create a MessageInput component with: auto-resizing textarea (grows with content, max 6 lines), send button (enabled only when textarea has content), keyboard shortcut (Enter to send, Shift+Enter for newline), loading state that disables input while waiting for response, and a clear visual design using TailwindCSS. The component accepts an onSend callback prop and manages its own local state.",
+      "phase": "phase-2",
+      "priority": "critical",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [
+        "CHAT-004"
+      ],
+      "assigned_agent": "build",
+      "estimated_complexity": "medium",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-010",
+      "github_issue": 10,
+      "title": "Build message display with chat bubbles and agent avatars",
+      "description": "Create a MessageList component that renders a scrollable list of messages. Each message renders as a ChatBubble component with: different styles for user messages (right-aligned, primary color) vs agent messages (left-aligned, neutral color), agent avatar/icon, agent name label, timestamp, and markdown rendering for message content (using react-markdown or similar). The list auto-scrolls to the bottom on new messages with a scroll-to-bottom button when scrolled up.",
+      "phase": "phase-2",
+      "priority": "critical",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [
+        "CHAT-004",
+        "CHAT-008"
+      ],
+      "assigned_agent": "build",
+      "estimated_complexity": "large",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-011",
+      "github_issue": 11,
+      "title": "Implement streaming response display with typing indicator",
+      "description": "Add streaming response support so agent replies appear token-by-token. Backend: Create a streaming endpoint POST /api/chat/stream that yields Server-Sent Events (SSE) with partial message chunks. Frontend: Create a useStreamingResponse hook that consumes SSE, accumulates tokens, and exposes the partial message. Show a typing indicator animation (three dots) while waiting for the first token. Handle stream interruption and errors gracefully. The ChatBubble component should render partial content during streaming.",
+      "phase": "phase-2",
+      "priority": "high",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [
+        "CHAT-010",
+        "CHAT-006"
+      ],
+      "assigned_agent": "build",
+      "estimated_complexity": "large",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-012",
+      "github_issue": 12,
+      "title": "Build agent selector component with routing to orchestrator",
+      "description": "Create an AgentSelector component that displays available ITOM agents (Discovery, Asset, Auditor, Documentator, and auto-route via Orchestrator). Each agent shows: name, icon, short description, and current status (online/offline/busy). The selector appears in the chat header area. When an agent is selected, subsequent messages route to that agent. The 'Auto' option lets the orchestrator decide routing. Backend: Create GET /api/agents endpoint that returns agent list with statuses by querying the orchestrator. Create POST /api/chat/route that accepts a message and optional agent target.",
+      "phase": "phase-2",
+      "priority": "high",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [
+        "CHAT-008",
+        "CHAT-003"
+      ],
+      "assigned_agent": "build",
+      "estimated_complexity": "medium",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-013",
+      "github_issue": 13,
+      "title": "Create FastAPI chat endpoint with orchestrator proxy",
+      "description": "Implement the core chat API endpoint POST /api/chat that receives a message payload (content, conversationId, agentTarget) and proxies it to the itom-orchestrator MCP server. The endpoint handles: message validation, conversation context assembly (fetching previous messages for context), forwarding to orchestrator, receiving and relaying the response, and storing both the user message and agent response. Return the complete agent response with metadata (agent used, response time, tokens). Handle orchestrator connection failures with clear error responses.",
+      "phase": "phase-2",
+      "priority": "critical",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [
+        "CHAT-003",
+        "CHAT-005"
+      ],
+      "assigned_agent": "build",
+      "estimated_complexity": "large",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-014",
+      "github_issue": 14,
+      "title": "Wire up full chat flow: input to display with WebSocket updates",
+      "description": "Integrate all chat components into a working end-to-end flow. Create the main Chat page component that composes MessageInput, MessageList, and AgentSelector. Implement the chat state management using React context or a lightweight state manager: active conversation, messages array, loading state, selected agent. Wire WebSocket for real-time message delivery (so multiple browser tabs stay in sync). Handle the full lifecycle: user types message, hits send, message appears in list, typing indicator shows, streaming response renders, final message saved.",
+      "phase": "phase-2",
+      "priority": "critical",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [
+        "CHAT-009",
+        "CHAT-010",
+        "CHAT-011",
+        "CHAT-012",
+        "CHAT-013"
+      ],
+      "assigned_agent": "build",
+      "estimated_complexity": "large",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-015",
+      "github_issue": 15,
+      "title": "Implement conversation persistence with SQLite backend",
+      "description": "Create a persistence layer for conversations and messages. Backend: Use SQLite (via aiosqlite) with tables for conversations (id, title, agent_id, created_at, updated_at, metadata_json) and messages (id, conversation_id, role, content, agent_id, timestamp, artifacts_json). Create a DatabaseService class with async CRUD operations: create_conversation, get_conversation, list_conversations, delete_conversation, add_message, get_messages. Include database migration setup (simple version table with SQL scripts). Auto-generate conversation titles from the first user message.",
+      "phase": "phase-3",
+      "priority": "critical",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [
+        "CHAT-013"
+      ],
+      "assigned_agent": "build",
+      "estimated_complexity": "large",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-016",
+      "github_issue": 16,
+      "title": "Build conversation list sidebar with create and delete",
+      "description": "Create a ConversationList component for the sidebar that shows all conversations grouped by date (Today, Yesterday, This Week, Older). Each item shows: title (auto-generated or user-set), agent icon, last message preview (truncated), timestamp. Include a New Conversation button at the top. Support conversation deletion with confirmation dialog. Clicking a conversation loads it in the main chat area. Highlight the active conversation. Backend: Create GET /api/conversations (list), POST /api/conversations (create), DELETE /api/conversations/:id (delete) endpoints.",
+      "phase": "phase-3",
+      "priority": "high",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [
+        "CHAT-015",
+        "CHAT-004"
+      ],
+      "assigned_agent": "build",
+      "estimated_complexity": "medium",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-017",
+      "github_issue": 17,
+      "title": "Implement conversation search with full-text matching",
+      "description": "Add search functionality across all conversations. Backend: Implement full-text search using SQLite FTS5 extension on message content and conversation titles. Create GET /api/conversations/search?q=query endpoint that returns matching conversations with highlighted snippets. Frontend: Add a SearchBar component at the top of the sidebar. Search results replace the conversation list while active, showing matched conversations with the matching text highlighted. Support keyboard navigation (arrow keys) through results. Debounce search input (300ms).",
+      "phase": "phase-3",
+      "priority": "medium",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [
+        "CHAT-015",
+        "CHAT-016"
+      ],
+      "assigned_agent": "build",
+      "estimated_complexity": "medium",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-018",
+      "github_issue": 18,
+      "title": "Implement context and memory persistence across conversations",
+      "description": "Add persistent context that carries across conversations with the same agent. Backend: Create a context_memory table (agent_id, key, value, updated_at) and a ContextService class. When sending a message to the orchestrator, include relevant context from previous conversations (last N messages with same agent, stored facts, user preferences). Create GET /api/context/:agentId and PUT /api/context/:agentId endpoints for viewing and editing stored context. Frontend: Add a Context Panel (slide-out) that shows what the system remembers for the selected agent, with options to edit or clear entries.",
+      "phase": "phase-3",
+      "priority": "medium",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [
+        "CHAT-015",
+        "CHAT-012"
+      ],
+      "assigned_agent": "build",
+      "estimated_complexity": "large",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-019",
+      "github_issue": 19,
+      "title": "Add conversation export in multiple formats",
+      "description": "Allow users to export conversations. Implement export to: JSON (full structured data), Markdown (formatted chat transcript), and plain text. Backend: Create GET /api/conversations/:id/export?format=json|md|txt endpoint. Frontend: Add an Export button in the conversation header with a dropdown for format selection. The export triggers a file download. Include conversation metadata (agent used, date range, message count) in the export header.",
+      "phase": "phase-3",
+      "priority": "low",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [
+        "CHAT-015"
+      ],
+      "assigned_agent": "build",
+      "estimated_complexity": "small",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-020",
+      "github_issue": 20,
+      "title": "Implement artifact detection and parsing from agent responses",
+      "description": "Create an artifact detection system that identifies structured output in agent responses. Artifacts include: audit reports (JSON/table format), compliance documents (markdown with sections), health dashboards (metrics/charts data), CMDB records (structured key-value data), and workflow results (step-by-step status). Backend: Create an ArtifactParser service that scans message content for artifact markers (fenced code blocks with type hints, JSON blocks, structured sections). Extract artifacts into typed Artifact objects (id, type, title, content, metadata). Store artifacts linked to their source message.",
+      "phase": "phase-4",
+      "priority": "critical",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [
+        "CHAT-015",
+        "CHAT-014"
+      ],
+      "assigned_agent": "build",
+      "estimated_complexity": "large",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-021",
+      "github_issue": 21,
+      "title": "Build inline report viewer for audit and compliance artifacts",
+      "description": "Create a ReportViewer component that renders audit reports and compliance documents inline in the chat. Support: tabular data (sortable tables), key-value displays (for CMDB records), section-based documents (collapsible sections with headers), and summary cards (metric highlights at the top). The viewer appears inline replacing or expanding the message bubble when an artifact is detected. Include a maximize button to view full-screen. Use TailwindCSS for clean, professional report styling.",
+      "phase": "phase-4",
+      "priority": "high",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [
+        "CHAT-020"
+      ],
+      "assigned_agent": "build",
+      "estimated_complexity": "large",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-022",
+      "github_issue": 22,
+      "title": "Build dashboard renderer for health and metrics artifacts",
+      "description": "Create a DashboardRenderer component for displaying health metrics and status dashboards inline. Render: metric cards (number, label, trend arrow), status grids (green/yellow/red indicators), progress bars, and simple charts (bar and line charts using a lightweight charting library like recharts). The component takes structured metrics data from artifacts and auto-selects the best visualization. Support both compact (inline in chat) and expanded (full-width) display modes.",
+      "phase": "phase-4",
+      "priority": "high",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [
+        "CHAT-020"
+      ],
+      "assigned_agent": "build",
+      "estimated_complexity": "large",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-023",
+      "github_issue": 23,
+      "title": "Build document viewer for markdown and structured text artifacts",
+      "description": "Create a DocumentViewer component for rendering long-form documents (agent-generated docs, compliance policies, runbooks). Support: full markdown rendering with syntax highlighting for code blocks, table of contents generation from headings, collapsible sections, copy-to-clipboard for code blocks, and print-friendly layout. Use react-markdown with remark-gfm for GitHub-flavored markdown. Include a reading progress indicator for long documents.",
+      "phase": "phase-4",
+      "priority": "medium",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [
+        "CHAT-020"
+      ],
+      "assigned_agent": "build",
+      "estimated_complexity": "medium",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-024",
+      "github_issue": 24,
+      "title": "Implement artifact export and download functionality",
+      "description": "Add export capabilities for all artifact types. Support: JSON export (raw artifact data), CSV export (for tabular data), PDF export (for reports and documents using a client-side PDF library), and PNG export (for dashboard visualizations). Backend: Create GET /api/artifacts/:id/export?format=json|csv|pdf endpoint. Frontend: Add export buttons to each artifact viewer component with format options. Show a download progress indicator for large exports. Store exported files temporarily for re-download.",
+      "phase": "phase-4",
+      "priority": "medium",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [
+        "CHAT-021",
+        "CHAT-022",
+        "CHAT-023"
+      ],
+      "assigned_agent": "build",
+      "estimated_complexity": "medium",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-025",
+      "github_issue": 25,
+      "title": "Build agent status panel with connection indicators",
+      "description": "Create an AgentStatusPanel component that shows the status of all ITOM agents. For each agent display: name, icon, connection status (online/offline/error with colored indicator), current activity (idle/processing/waiting), last heartbeat timestamp, and response latency. Backend: Create GET /api/agents/status endpoint that queries the orchestrator for real-time agent status. Include a refresh button and auto-refresh interval (configurable, default 30s). Show a summary bar: 'X of Y agents online'.",
+      "phase": "phase-5",
+      "priority": "high",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [
+        "CHAT-012",
+        "CHAT-006"
+      ],
+      "assigned_agent": "build",
+      "estimated_complexity": "medium",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-026",
+      "github_issue": 26,
+      "title": "Build workflow progress tracker component",
+      "description": "Create a WorkflowTracker component that displays active and recent ITOM workflows (audit runs, discovery scans, compliance checks). Show: workflow name, triggering agent, start time, current step (with step-by-step progress visualization), overall progress percentage, and status (running/completed/failed). Backend: Create GET /api/workflows endpoint that queries orchestrator for active workflows. Create GET /api/workflows/:id for detailed step data. Display workflows in a list with expandable detail views.",
+      "phase": "phase-5",
+      "priority": "high",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [
+        "CHAT-003",
+        "CHAT-008"
+      ],
+      "assigned_agent": "build",
+      "estimated_complexity": "large",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-027",
+      "github_issue": 27,
+      "title": "Build health metrics display with historical data",
+      "description": "Create a HealthMetrics component that shows system health information. Display: overall system health score, individual agent health scores, error rates (last hour, last 24h), response time trends, message throughput, and active connection count. Backend: Create GET /api/health/metrics endpoint that aggregates health data from the orchestrator and local statistics. Use recharts for trend visualizations (line charts for latency, bar charts for throughput). Support time range selection (1h, 6h, 24h, 7d).",
+      "phase": "phase-5",
+      "priority": "medium",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [
+        "CHAT-003",
+        "CHAT-008"
+      ],
+      "assigned_agent": "build",
+      "estimated_complexity": "large",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-028",
+      "github_issue": 28,
+      "title": "Implement real-time status updates via WebSocket",
+      "description": "Extend the WebSocket infrastructure to push real-time status updates to the dashboard. Backend: Create WebSocket channels for status updates (/ws/status). Implement a StatusBroadcaster that polls the orchestrator at intervals and pushes changes to connected clients. Frontend: Create a useStatusStream hook that subscribes to status WebSocket and provides live data to dashboard components. Handle reconnection and stale data detection (show 'data stale' warning if no update in 60s). Implement optimistic UI updates to minimize perceived latency.",
+      "phase": "phase-5",
+      "priority": "medium",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [
+        "CHAT-006",
+        "CHAT-025"
+      ],
+      "assigned_agent": "build",
+      "estimated_complexity": "medium",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-029",
+      "github_issue": 29,
+      "title": "Create dashboard page layout with navigation and widget arrangement",
+      "description": "Create the Dashboard page that composes AgentStatusPanel, WorkflowTracker, and HealthMetrics into a cohesive layout. Implement a grid-based layout with resizable panels (CSS Grid). Add tab navigation between dashboard views: Overview (all widgets summary), Agents (detailed agent status), Workflows (workflow list and detail), Health (metrics and charts). Include a quick-action bar with buttons for common operations (refresh all, start audit, check health). Wire up the Next.js routing for /dashboard with sub-routes.",
+      "phase": "phase-5",
+      "priority": "high",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [
+        "CHAT-025",
+        "CHAT-026",
+        "CHAT-027"
+      ],
+      "assigned_agent": "build",
+      "estimated_complexity": "medium",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-030",
+      "github_issue": 30,
+      "title": "Implement responsive design for mobile and tablet",
+      "description": "Make the entire application responsive across breakpoints: mobile (<640px), tablet (640-1024px), desktop (>1024px). Mobile: sidebar becomes a slide-out drawer with hamburger toggle, chat takes full width, dashboard stacks vertically. Tablet: sidebar collapses to icons-only by default, dashboard uses 2-column grid. Desktop: full sidebar, 3-column dashboard grid. Use Tailwind responsive prefixes (sm:, md:, lg:) throughout. Test touch interactions for mobile (swipe to open sidebar, pull to refresh).",
+      "phase": "phase-6",
+      "priority": "high",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [
+        "CHAT-014",
+        "CHAT-029"
+      ],
+      "assigned_agent": "build",
+      "estimated_complexity": "large",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-031",
+      "github_issue": 31,
+      "title": "Implement keyboard shortcuts system",
+      "description": "Create a comprehensive keyboard shortcut system. Implement a useKeyboardShortcuts hook that registers global shortcuts: Cmd/Ctrl+K (quick search), Cmd/Ctrl+N (new conversation), Cmd/Ctrl+/ (toggle sidebar), Cmd/Ctrl+1-5 (switch agents), Escape (close panels/dialogs), Up/Down (navigate conversations). Add a shortcut help modal (triggered by ? key) that lists all available shortcuts. Ensure shortcuts do not conflict with browser defaults and are disabled when typing in input fields.",
+      "phase": "phase-6",
+      "priority": "medium",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [
+        "CHAT-014"
+      ],
+      "assigned_agent": "build",
+      "estimated_complexity": "medium",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-032",
+      "github_issue": 32,
+      "title": "Implement theme system with light and dark modes",
+      "description": "Create a theme system supporting light and dark modes with system preference detection. Use CSS custom properties defined in TailwindCSS config for all color tokens. Implement a ThemeProvider context that: detects system preference (prefers-color-scheme), allows manual override, persists selection in localStorage, and applies the theme class to the document root. Add a theme toggle button in the sidebar footer. Ensure all components respect theme tokens (no hardcoded colors). Include smooth transition animation on theme switch.",
+      "phase": "phase-6",
+      "priority": "medium",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [
+        "CHAT-002",
+        "CHAT-004"
+      ],
+      "assigned_agent": "build",
+      "estimated_complexity": "medium",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-033",
+      "github_issue": 33,
+      "title": "Implement accessibility: ARIA labels, screen reader support, focus management",
+      "description": "Audit and enhance accessibility across the entire application. Add proper ARIA roles and labels to all interactive elements. Implement focus trapping in modals and dialogs. Ensure proper heading hierarchy (h1 > h2 > h3). Add skip-to-content link. Ensure color contrast meets WCAG AA standards (4.5:1 for text, 3:1 for large text). Add aria-live regions for dynamic content (new messages, status updates). Ensure all images and icons have alt text. Test with screen reader (VoiceOver) and keyboard-only navigation.",
+      "phase": "phase-6",
+      "priority": "high",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [
+        "CHAT-014",
+        "CHAT-029"
+      ],
+      "assigned_agent": "build",
+      "estimated_complexity": "medium",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-034",
+      "github_issue": 34,
+      "title": "Polish loading states, error handling UX, and empty states",
+      "description": "Create consistent loading, error, and empty state patterns throughout the app. Loading: skeleton screens for conversation list, message list, and dashboard panels (using animated placeholder shapes, not spinners). Error: create an ErrorBoundary component for React error catching, create a toast notification system for transient errors, create inline error states for failed API calls with retry buttons. Empty states: design empty state illustrations and messages for: no conversations, no messages, no search results, no agents online, no workflows. All states must be visually polished and helpful.",
+      "phase": "phase-6",
+      "priority": "high",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [
+        "CHAT-014",
+        "CHAT-029"
+      ],
+      "assigned_agent": "build",
+      "estimated_complexity": "large",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-035",
+      "github_issue": 35,
+      "title": "Write frontend unit tests with React Testing Library",
+      "description": "Set up Jest and React Testing Library for the frontend. Write unit tests for all major components: MessageInput (send behavior, keyboard shortcuts, disabled states), MessageList (rendering, scrolling, empty state), ChatBubble (user vs agent styling, markdown rendering), AgentSelector (selection, status display), ConversationList (listing, deletion, active highlight), SearchBar (debounce, results display). Aim for 80% component coverage. Configure test scripts in package.json. Set up test utilities and mock providers for theme, WebSocket, and API contexts.",
+      "phase": "phase-7",
+      "priority": "high",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [
+        "CHAT-014",
+        "CHAT-016"
+      ],
+      "assigned_agent": "build",
+      "estimated_complexity": "large",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-036",
+      "github_issue": 36,
+      "title": "Write FastAPI integration tests with pytest",
+      "description": "Set up pytest with httpx AsyncClient for FastAPI testing. Write integration tests for all API endpoints: /api/health (status check), /api/chat (message handling, validation, error cases), /api/conversations (CRUD operations), /api/conversations/search (FTS search), /api/agents (agent listing, status), /api/artifacts (export in all formats), /api/workflows (listing, detail), /api/health/metrics (metrics aggregation). Test WebSocket connections: connect, message exchange, disconnect, reconnect. Use SQLite in-memory database for test isolation. Aim for 90% endpoint coverage.",
+      "phase": "phase-7",
+      "priority": "high",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [
+        "CHAT-015",
+        "CHAT-013"
+      ],
+      "assigned_agent": "build",
+      "estimated_complexity": "large",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-037",
+      "github_issue": 37,
+      "title": "Write E2E tests with Playwright",
+      "description": "Set up Playwright for end-to-end testing. Write E2E tests for critical user flows: send a message and receive a response, create a new conversation, switch between conversations, search for a conversation, select an agent, view an artifact inline, export a conversation, navigate to dashboard, check agent status panel, toggle theme, use keyboard shortcuts, responsive layout (mobile viewport). Configure Playwright to start both frontend and backend servers before tests. Include visual regression snapshots for key pages.",
+      "phase": "phase-7",
+      "priority": "medium",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [
+        "CHAT-014",
+        "CHAT-029"
+      ],
+      "assigned_agent": "build",
+      "estimated_complexity": "large",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-038",
+      "github_issue": 38,
+      "title": "Generate OpenAPI documentation for FastAPI backend",
+      "description": "Ensure all FastAPI endpoints have complete OpenAPI documentation. Add detailed docstrings to every endpoint function. Define all request and response Pydantic models with field descriptions and examples. Configure FastAPI metadata (title, description, version, contact, license). Add tags for endpoint grouping (Chat, Conversations, Agents, Artifacts, Workflows, Health). Verify the auto-generated /docs (Swagger UI) and /redoc pages are complete and accurate. Export the OpenAPI spec as openapi.json for external consumers.",
+      "phase": "phase-7",
+      "priority": "medium",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [
+        "CHAT-013",
+        "CHAT-015"
+      ],
+      "assigned_agent": "build",
+      "estimated_complexity": "medium",
+      "pr_number": null,
+      "completed_at": null
+    },
+    {
+      "id": "CHAT-039",
+      "github_issue": 39,
+      "title": "Write user documentation and developer setup guide",
+      "description": "Create comprehensive documentation. User Guide (docs/user-guide.md): overview, getting started, chat interface usage, agent selection, conversation management, artifact viewing, dashboard usage, keyboard shortcuts, and FAQ. Developer Guide (docs/developer-guide.md): prerequisites (Node.js, Python, pnpm), local setup instructions (step-by-step), project structure overview, environment variables reference, API overview, adding new components guide, testing instructions, and deployment notes. Architecture doc (docs/architecture.md): system architecture diagram, frontend-backend communication, WebSocket protocol, orchestrator integration.",
+      "phase": "phase-7",
+      "priority": "low",
+      "type": "feature",
+      "status": "planned",
+      "dependencies": [],
+      "assigned_agent": "build",
+      "estimated_complexity": "medium",
+      "pr_number": null,
+      "completed_at": null
+    }
+  ]
 }

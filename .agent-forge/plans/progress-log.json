@@ -1,1 +1,316 @@
-{ "entries": [] }
+{
+  "entries": [
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-001",
+      "phase_id": "phase-1",
+      "details": "Created ticket CHAT-001: Initialize Next.js project with TypeScript and app router",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-002",
+      "phase_id": "phase-1",
+      "details": "Created ticket CHAT-002: Configure TailwindCSS with design system tokens",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-003",
+      "phase_id": "phase-1",
+      "details": "Created ticket CHAT-003: Set up FastAPI backend with project structure",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-004",
+      "phase_id": "phase-1",
+      "details": "Created ticket CHAT-004: Create application layout shell with sidebar and main content area",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-005",
+      "phase_id": "phase-1",
+      "details": "Created ticket CHAT-005: Configure environment variables and CORS settings",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-006",
+      "phase_id": "phase-1",
+      "details": "Created ticket CHAT-006: Implement WebSocket infrastructure for real-time communication",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-007",
+      "phase_id": "phase-1",
+      "details": "Created ticket CHAT-007: Set up development tooling: ESLint, Prettier, and concurrent dev servers",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-008",
+      "phase_id": "phase-1",
+      "details": "Created ticket CHAT-008: Create shared TypeScript type definitions and API client",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-009",
+      "phase_id": "phase-2",
+      "details": "Created ticket CHAT-009: Build message input component with send button and auto-resize",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-010",
+      "phase_id": "phase-2",
+      "details": "Created ticket CHAT-010: Build message display with chat bubbles and agent avatars",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-011",
+      "phase_id": "phase-2",
+      "details": "Created ticket CHAT-011: Implement streaming response display with typing indicator",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-012",
+      "phase_id": "phase-2",
+      "details": "Created ticket CHAT-012: Build agent selector component with routing to orchestrator",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-013",
+      "phase_id": "phase-2",
+      "details": "Created ticket CHAT-013: Create FastAPI chat endpoint with orchestrator proxy",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-014",
+      "phase_id": "phase-2",
+      "details": "Created ticket CHAT-014: Wire up full chat flow: input to display with WebSocket updates",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-015",
+      "phase_id": "phase-3",
+      "details": "Created ticket CHAT-015: Implement conversation persistence with SQLite backend",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-016",
+      "phase_id": "phase-3",
+      "details": "Created ticket CHAT-016: Build conversation list sidebar with create and delete",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-017",
+      "phase_id": "phase-3",
+      "details": "Created ticket CHAT-017: Implement conversation search with full-text matching",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-018",
+      "phase_id": "phase-3",
+      "details": "Created ticket CHAT-018: Implement context and memory persistence across conversations",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-019",
+      "phase_id": "phase-3",
+      "details": "Created ticket CHAT-019: Add conversation export in multiple formats",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-020",
+      "phase_id": "phase-4",
+      "details": "Created ticket CHAT-020: Implement artifact detection and parsing from agent responses",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-021",
+      "phase_id": "phase-4",
+      "details": "Created ticket CHAT-021: Build inline report viewer for audit and compliance artifacts",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-022",
+      "phase_id": "phase-4",
+      "details": "Created ticket CHAT-022: Build dashboard renderer for health and metrics artifacts",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-023",
+      "phase_id": "phase-4",
+      "details": "Created ticket CHAT-023: Build document viewer for markdown and structured text artifacts",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-024",
+      "phase_id": "phase-4",
+      "details": "Created ticket CHAT-024: Implement artifact export and download functionality",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-025",
+      "phase_id": "phase-5",
+      "details": "Created ticket CHAT-025: Build agent status panel with connection indicators",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-026",
+      "phase_id": "phase-5",
+      "details": "Created ticket CHAT-026: Build workflow progress tracker component",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-027",
+      "phase_id": "phase-5",
+      "details": "Created ticket CHAT-027: Build health metrics display with historical data",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-028",
+      "phase_id": "phase-5",
+      "details": "Created ticket CHAT-028: Implement real-time status updates via WebSocket",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-029",
+      "phase_id": "phase-5",
+      "details": "Created ticket CHAT-029: Create dashboard page layout with navigation and widget arrangement",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-030",
+      "phase_id": "phase-6",
+      "details": "Created ticket CHAT-030: Implement responsive design for mobile and tablet",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-031",
+      "phase_id": "phase-6",
+      "details": "Created ticket CHAT-031: Implement keyboard shortcuts system",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-032",
+      "phase_id": "phase-6",
+      "details": "Created ticket CHAT-032: Implement theme system with light and dark modes",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-033",
+      "phase_id": "phase-6",
+      "details": "Created ticket CHAT-033: Implement accessibility: ARIA labels, screen reader support, focus management",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-034",
+      "phase_id": "phase-6",
+      "details": "Created ticket CHAT-034: Polish loading states, error handling UX, and empty states",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-035",
+      "phase_id": "phase-7",
+      "details": "Created ticket CHAT-035: Write frontend unit tests with React Testing Library",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-036",
+      "phase_id": "phase-7",
+      "details": "Created ticket CHAT-036: Write FastAPI integration tests with pytest",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-037",
+      "phase_id": "phase-7",
+      "details": "Created ticket CHAT-037: Write E2E tests with Playwright",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-038",
+      "phase_id": "phase-7",
+      "details": "Created ticket CHAT-038: Generate OpenAPI documentation for FastAPI backend",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    },
+    {
+      "timestamp": "2026-02-12T22:00:00Z",
+      "event": "ticket_created",
+      "ticket_id": "CHAT-039",
+      "phase_id": "phase-7",
+      "details": "Created ticket CHAT-039: Write user documentation and developer setup guide",
+      "metrics_snapshot": { "overall_percentage": 0, "open_bugs": 0, "velocity": 0, "total_tickets": 39, "completed_tickets": 0 }
+    }
+  ]
+}

@@ -1,14 +1,200 @@
 {
   "project": "itom-chat-ui",
-  "created_at": "2026-02-12T21:45:00Z",
-  "updated_at": "2026-02-12T21:45:00Z",
-  "phases": [],
-  "milestones": [],
+  "vision": "Conversational interface for human interaction with ITOM agents -- chat history, artifact viewer, conversation memory, agent selection, status monitoring.",
+  "created_at": "2026-02-12T22:00:00Z",
+  "updated_at": "2026-02-12T22:00:00Z",
+  "phases": [
+    {
+      "id": "phase-1",
+      "name": "Foundation",
+      "description": "Project structure, Next.js setup, TailwindCSS, FastAPI backend, basic layout shell, environment configuration, WebSocket infrastructure, and development tooling.",
+      "status": "active",
+      "order": 1,
+      "milestones": [
+        {
+          "id": "M-1",
+          "name": "Frontend and Backend Scaffold",
+          "description": "Running Next.js frontend and FastAPI backend with basic layout shell, WebSocket connectivity, and hot-reload development environment.",
+          "target_date": null,
+          "completed_date": null,
+          "status": "in-progress"
+        }
+      ],
+      "progress": {
+        "total_tickets": 8,
+        "completed": 0,
+        "in_progress": 0,
+        "bugs_found": 0,
+        "bugs_fixed": 0,
+        "improvements_proposed": 0,
+        "percentage": 0
+      }
+    },
+    {
+      "id": "phase-2",
+      "name": "Chat Core",
+      "description": "Core chat interface: message input, message display with bubbles, streaming response handling, agent routing and selection, FastAPI chat endpoint, and real-time WebSocket messaging.",
+      "status": "planned",
+      "order": 2,
+      "milestones": [
+        {
+          "id": "M-2",
+          "name": "Functional Chat Interface",
+          "description": "Functional chat interface where users can send messages, see streaming responses, and select which ITOM agent to interact with.",
+          "target_date": null,
+          "completed_date": null,
+          "status": "todo"
+        }
+      ],
+      "progress": {
+        "total_tickets": 6,
+        "completed": 0,
+        "in_progress": 0,
+        "bugs_found": 0,
+        "bugs_fixed": 0,
+        "improvements_proposed": 0,
+        "percentage": 0
+      }
+    },
+    {
+      "id": "phase-3",
+      "name": "Conversation Management",
+      "description": "Persistent conversation storage, conversation list sidebar, search across conversations, context and memory persistence, and conversation export capabilities.",
+      "status": "planned",
+      "order": 3,
+      "milestones": [
+        {
+          "id": "M-3",
+          "name": "Persistent Conversations with Search",
+          "description": "Users can create, browse, search, and resume conversations with persistent context across sessions.",
+          "target_date": null,
+          "completed_date": null,
+          "status": "todo"
+        }
+      ],
+      "progress": {
+        "total_tickets": 5,
+        "completed": 0,
+        "in_progress": 0,
+        "bugs_found": 0,
+        "bugs_fixed": 0,
+        "improvements_proposed": 0,
+        "percentage": 0
+      }
+    },
+    {
+      "id": "phase-4",
+      "name": "Artifact Viewer",
+      "description": "Inline viewing of audit reports, compliance documents, health dashboards, and other artifacts produced by ITOM agents. Detection, parsing, rendering, and export.",
+      "status": "planned",
+      "order": 4,
+      "milestones": [
+        {
+          "id": "M-4",
+          "name": "Inline Artifact Rendering",
+          "description": "Artifacts produced by agents (reports, dashboards, documents) render inline in the chat with export and download options.",
+          "target_date": null,
+          "completed_date": null,
+          "status": "todo"
+        }
+      ],
+      "progress": {
+        "total_tickets": 5,
+        "completed": 0,
+        "in_progress": 0,
+        "bugs_found": 0,
+        "bugs_fixed": 0,
+        "improvements_proposed": 0,
+        "percentage": 0
+      }
+    },
+    {
+      "id": "phase-5",
+      "name": "Status Dashboard",
+      "description": "Real-time agent status panel, workflow progress tracking, health metrics display, WebSocket-based live updates, and dashboard layout with navigation.",
+      "status": "planned",
+      "order": 5,
+      "milestones": [
+        {
+          "id": "M-5",
+          "name": "Live Status Dashboard",
+          "description": "Live dashboard showing agent statuses, workflow progress, and health metrics with real-time updates via WebSocket.",
+          "target_date": null,
+          "completed_date": null,
+          "status": "todo"
+        }
+      ],
+      "progress": {
+        "total_tickets": 5,
+        "completed": 0,
+        "in_progress": 0,
+        "bugs_found": 0,
+        "bugs_fixed": 0,
+        "improvements_proposed": 0,
+        "percentage": 0
+      }
+    },
+    {
+      "id": "phase-6",
+      "name": "Polish and UX",
+      "description": "Responsive design for mobile and tablet, keyboard shortcuts, theme system with light and dark modes, accessibility compliance, and polished loading and error states.",
+      "status": "planned",
+      "order": 6,
+      "milestones": [
+        {
+          "id": "M-6",
+          "name": "Production-Ready UX",
+          "description": "Fully responsive, accessible, and polished UI with keyboard navigation, theme switching, and graceful error handling.",
+          "target_date": null,
+          "completed_date": null,
+          "status": "todo"
+        }
+      ],
+      "progress": {
+        "total_tickets": 5,
+        "completed": 0,
+        "in_progress": 0,
+        "bugs_found": 0,
+        "bugs_fixed": 0,
+        "improvements_proposed": 0,
+        "percentage": 0
+      }
+    },
+    {
+      "id": "phase-7",
+      "name": "Testing and Documentation",
+      "description": "Comprehensive test coverage with React Testing Library unit tests, FastAPI integration tests, Playwright E2E tests, OpenAPI documentation, and user guide.",
+      "status": "planned",
+      "order": 7,
+      "milestones": [
+        {
+          "id": "M-7",
+          "name": "Full Test Suite and Documentation",
+          "description": "Full test suite passing with coverage targets met, auto-generated API docs, and user-facing documentation.",
+          "target_date": null,
+          "completed_date": null,
+          "status": "todo"
+        }
+      ],
+      "progress": {
+        "total_tickets": 5,
+        "completed": 0,
+        "in_progress": 0,
+        "bugs_found": 0,
+        "bugs_fixed": 0,
+        "improvements_proposed": 0,
+        "percentage": 0
+      }
+    }
+  ],
   "summary": {
-    "total_phases": 0,
+    "total_phases": 7,
     "completed_phases": 0,
-    "total_tickets": 0,
+    "total_tickets": 39,
     "completed_tickets": 0,
-    "overall_percentage": 0
+    "total_bugs": 0,
+    "open_bugs": 0,
+    "overall_percentage": 0,
+    "velocity_tickets_per_week": 0
   }
 }
