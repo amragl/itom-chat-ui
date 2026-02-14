@@ -1,7 +1,6 @@
 'use client';
 
 import { useChatActions, useChatState } from '@/contexts';
-import AgentSelector from './AgentSelector';
 import type { ConnectionStatus } from '@/hooks/useWebSocket';
 
 // ---------------------------------------------------------------------------
@@ -48,20 +47,20 @@ function ConnectionIndicator({ status }: { status: ConnectionStatus }) {
 /**
  * Header bar for the chat page.
  *
- * Contains the agent selector dropdown, a "New Chat" button, and the
- * WebSocket connection status indicator.
+ * Contains the title, a "New Chat" button, and the WebSocket connection
+ * status indicator. All messages are routed through the orchestrator which
+ * decides the best agent automatically.
  */
 export default function ChatHeader() {
-  const { selectedAgentId, connectionStatus } = useChatState();
-  const { selectAgent, startNewConversation } = useChatActions();
+  const { connectionStatus } = useChatState();
+  const { startNewConversation } = useChatActions();
 
   return (
     <header className="flex h-14 shrink-0 items-center justify-between border-b border-neutral-200 bg-surface px-4 dark:border-neutral-700">
       <div className="flex items-center gap-3">
-        <AgentSelector
-          selectedAgentId={selectedAgentId}
-          onSelectAgent={selectAgent}
-        />
+        <h1 className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">
+          ITOM Chat
+        </h1>
       </div>
 
       <div className="flex items-center gap-4">

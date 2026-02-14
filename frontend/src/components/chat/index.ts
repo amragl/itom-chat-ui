@@ -1,4 +1,3 @@
-export { default as AgentSelector } from './AgentSelector';
 export { default as ChatBubble } from './ChatBubble';
 export { default as ChatErrorBoundary } from './ChatErrorBoundary';
 export { default as ChatHeader } from './ChatHeader';

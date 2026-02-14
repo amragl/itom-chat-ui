@@ -36,9 +36,6 @@ export interface ChatState {
   /** Whether a streaming response is currently in progress. */
   isStreaming: boolean;
 
-  /** The currently selected agent ID. Null means auto-routing (orchestrator decides). */
-  selectedAgentId: string | null;
-
   /** Available ITOM agents fetched from the backend. */
   agents: Agent[];
 
@@ -61,9 +58,6 @@ export interface ChatState {
 export interface ChatActions {
   /** Send a message in the current conversation using streaming. */
   sendMessage: (content: string) => void;
-
-  /** Select a different agent for message routing. */
-  selectAgent: (agentId: string | null) => void;
 
   /** Start a new conversation (clears messages, generates new ID). */
   startNewConversation: () => void;
@@ -150,7 +144,6 @@ export function ChatProvider({ children }: ChatProviderProps) {
   );
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -397,18 +390,12 @@ export function ChatProvider({ children }: ChatProviderProps) {
         },
       });
 
-      // Start the streaming request
-      const agentTarget =
-        selectedAgentId === 'auto' ? undefined : selectedAgentId ?? undefined;
-      startStreaming(content, convId, agentTarget);
+      // Start the streaming request — always route through the orchestrator
+      startStreaming(content, convId);
       setIsLoading(false);
     },
-    [isLoading, isStreaming, messages, selectedAgentId, startStreaming, wsSendMessage],
+    [isLoading, isStreaming, messages, startStreaming, wsSendMessage],
   );
-
-  const selectAgent = useCallback((agentId: string | null) => {
-    setSelectedAgentId(agentId);
-  }, []);
 
   const startNewConversation = useCallback(() => {
     abortStreaming();
@@ -429,9 +416,6 @@ export function ChatProvider({ children }: ChatProviderProps) {
       const conversation = await apiClient.getConversation(loadConvId);
       setConversationId(conversation.id);
       setMessages(conversation.messages);
-      if (conversation.agentId) {
-        setSelectedAgentId(conversation.agentId);
-      }
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Failed to load conversation';
@@ -453,7 +437,6 @@ export function ChatProvider({ children }: ChatProviderProps) {
       messages,
       isLoading,
       isStreaming,
-      selectedAgentId,
       agents,
       connectionStatus,
       error,
@@ -464,7 +447,6 @@ export function ChatProvider({ children }: ChatProviderProps) {
       messages,
       isLoading,
       isStreaming,
-      selectedAgentId,
       agents,
       connectionStatus,
       error,
@@ -475,12 +457,11 @@ export function ChatProvider({ children }: ChatProviderProps) {
   const actionsValue = useMemo<ChatActions>(
     () => ({
       sendMessage,
-      selectAgent,
       startNewConversation,
       loadConversation,
       clearError,
     }),
-    [sendMessage, selectAgent, startNewConversation, loadConversation, clearError],
+    [sendMessage, startNewConversation, loadConversation, clearError],
   );
 
   return (
