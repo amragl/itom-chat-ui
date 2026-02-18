@@ -189,6 +189,36 @@ export async function deleteConversation(id: string): Promise<void> {
   return apiFetch<void>(`/api/conversations/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
 
+/**
+ * Search conversations by title and message content.
+ *
+ * Calls GET /api/conversations/search?q=query.
+ *
+ * @param query - The search query string.
+ */
+export async function searchConversations(query: string): Promise<ConversationSummary[]> {
+  return apiFetch<ConversationSummary[]>(
+    `/api/conversations/search?q=${encodeURIComponent(query)}`,
+  );
+}
+
+/**
+ * Export a conversation in the specified format.
+ *
+ * Calls GET /api/conversations/:id/export?format=json|text|markdown.
+ *
+ * @param id - The conversation UUID.
+ * @param format - Export format: "json", "text", or "markdown".
+ */
+export async function exportConversation(
+  id: string,
+  format: 'json' | 'text' | 'markdown' = 'json',
+): Promise<{ conversation_id: string; format: string; content_type: string; content: string }> {
+  return apiFetch(
+    `/api/conversations/${encodeURIComponent(id)}/export?format=${format}`,
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Messages
 // ---------------------------------------------------------------------------
@@ -344,6 +374,8 @@ export const apiClient = {
   getConversation,
   createConversation,
   deleteConversation,
+  searchConversations,
+  exportConversation,
 
   // Messages
   sendMessage,

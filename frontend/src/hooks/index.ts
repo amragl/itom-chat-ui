@@ -1,4 +1,6 @@
 export { useCurrentUser } from './useCurrentUser';
+export { useKeyboardShortcuts, getDefaultShortcuts } from './useKeyboardShortcuts';
+export type { KeyboardShortcut } from './useKeyboardShortcuts';
 export { useStreamingResponse } from './useStreamingResponse';
 export type {
   UseStreamingResponseOptions,
