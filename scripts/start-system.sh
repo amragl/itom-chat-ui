@@ -126,7 +126,7 @@ start_fastmcp_agent() {
   log "Starting $name on port $port..."
   cd "$dir"
   local python_bin=".venv/bin/python"
-  [ -f "$python_bin" ] || python_bin="python"
+  [ -f "$python_bin" ] || python_bin="python3"
 
   VALIDATE_ON_STARTUP=false "$python_bin" -c "
 from $module import mcp
