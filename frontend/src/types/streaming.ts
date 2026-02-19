@@ -8,7 +8,7 @@
 /**
  * Discriminator for the kind of SSE event received from the streaming endpoint.
  */
-export type StreamEventType = 'stream_start' | 'token' | 'stream_end' | 'error';
+export type StreamEventType = 'stream_start' | 'token' | 'stream_end' | 'error' | 'clarification';
 
 /**
  * Data payload for the ``stream_start`` SSE event.
@@ -52,18 +52,35 @@ export interface StreamErrorData {
 }
 
 /**
+ * Data payload for the ``clarification`` SSE event.
+ * Emitted when the orchestrator cannot disambiguate the user's message
+ * and needs the user to choose a domain before proceeding.
+ */
+export interface ClarificationData {
+  /** The question to present to the user. */
+  question: string;
+  /** Selectable option strings. */
+  options: string[];
+  /** Opaque token referencing the original pending message. */
+  pending_message_token: string;
+  /** Message ID for correlation. */
+  message_id?: string;
+}
+
+/**
  * Union type for all possible SSE event envelopes from the streaming endpoint.
  */
 export type StreamEvent =
   | { event: 'stream_start'; data: StreamStartData }
   | { event: 'token'; data: TokenData }
   | { event: 'stream_end'; data: StreamEndData }
-  | { event: 'error'; data: StreamErrorData };
+  | { event: 'error'; data: StreamErrorData }
+  | { event: 'clarification'; data: ClarificationData };
 
 /**
  * The current state of a streaming response.
  */
-export type StreamingStatus = 'idle' | 'connecting' | 'streaming' | 'complete' | 'error';
+export type StreamingStatus = 'idle' | 'connecting' | 'streaming' | 'complete' | 'error' | 'clarification';
 
 /**
  * State object returned by the useStreamingResponse hook.
@@ -89,4 +106,10 @@ export interface StreamingState {
 
   /** Whether the first token has been received (typing indicator uses this). */
   hasReceivedFirstToken: boolean;
+
+  /**
+   * Clarification payload when status is 'clarification'.
+   * Null in all other states.
+   */
+  clarificationData: ClarificationData | null;
 }

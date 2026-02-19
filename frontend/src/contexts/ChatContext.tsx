@@ -9,7 +9,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import type { Agent, Message, WebSocketChatPayload, WebSocketMessage } from '@/types';
+import type { Agent, ClarificationData, Message, WebSocketChatPayload, WebSocketMessage } from '@/types';
 import { apiClient } from '@/lib/api';
 import { buildHelpText, buildPrompt, parseCommand } from '@/lib/commands';
 import { useStreamingResponse } from '@/hooks/useStreamingResponse';
@@ -50,6 +50,12 @@ export interface ChatState {
    * MessageList. Null when not streaming or before the first token arrives.
    */
   streamingMessage: Partial<Message> | null;
+
+  /**
+   * Active clarification request from the orchestrator.
+   * Non-null when the assistant is waiting for the user to choose a domain.
+   */
+  clarification: { question: string; options: string[]; pendingToken: string } | null;
 }
 
 /**
@@ -67,6 +73,12 @@ export interface ChatActions {
 
   /** Clear any displayed error. */
   clearError: () => void;
+
+  /**
+   * Submit the user's answer to a clarification question.
+   * Calls POST /api/chat/clarify and streams the resolved response.
+   */
+  respondToClarification: (answer: string) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -146,6 +158,11 @@ export function ChatProvider({ children }: ChatProviderProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [clarification, setClarification] = useState<{
+    question: string;
+    options: string[];
+    pendingToken: string;
+  } | null>(null);
 
   // Ref to track the latest conversationId without triggering re-renders
   const conversationIdRef = useRef(conversationId);
@@ -199,6 +216,17 @@ export function ChatProvider({ children }: ChatProviderProps) {
     [],
   );
 
+  const handleClarification = useCallback(
+    (data: ClarificationData) => {
+      setClarification({
+        question: data.question,
+        options: data.options,
+        pendingToken: data.pending_message_token,
+      });
+    },
+    [],
+  );
+
   // --- Streaming response hook ---
   const {
     state: streamingState,
@@ -208,6 +236,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
   } = useStreamingResponse({
     onStreamEnd: handleStreamEnd,
     onError: handleStreamError,
+    onClarification: handleClarification,
   });
 
   const isStreaming =
@@ -281,6 +310,99 @@ export function ChatProvider({ children }: ChatProviderProps) {
   });
 
   // --- Actions ---
+
+  const respondToClarification = useCallback(
+    (answer: string) => {
+      if (!clarification || !conversationIdRef.current) return;
+      const convId = conversationIdRef.current;
+
+      // Clear the clarification bubble
+      setClarification(null);
+      setIsLoading(true);
+      setError(null);
+
+      // Show user's choice as a user message
+      const userMessage: Message = {
+        id: `user-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        role: 'user',
+        content: answer,
+        timestamp: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, userMessage]);
+
+      // Stream from /api/chat/clarify endpoint
+      const baseUrl =
+        typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL
+          ? process.env.NEXT_PUBLIC_API_URL
+          : 'http://localhost:8000';
+      const controller = new AbortController();
+
+      fetch(`${baseUrl}/api/chat/clarify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
+        body: JSON.stringify({
+          pending_message_token: clarification.pendingToken,
+          clarification_answer: answer,
+          conversation_id: convId,
+        }),
+        signal: controller.signal,
+      })
+        .then(async (response) => {
+          if (!response.ok || !response.body) {
+            setError('Failed to resolve clarification.');
+            setIsLoading(false);
+            return;
+          }
+          // Re-use the same startStreaming mechanism by reading the stream manually.
+          // For simplicity: hand off to startStreaming with a sentinel content.
+          // Actually, startStreaming goes to /api/chat/stream not /api/chat/clarify,
+          // so we parse the SSE here directly.
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+          let fullContent = '';
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const events = buffer.split('\n\n');
+            buffer = events.pop() ?? '';
+            for (const eventStr of events) {
+              for (const line of eventStr.split('\n')) {
+                if (!line.startsWith('data: ')) continue;
+                try {
+                  const parsed = JSON.parse(line.slice(6)) as { event: string; data: Record<string, unknown> };
+                  if (parsed.event === 'token') {
+                    fullContent += String(parsed.data.token ?? '');
+                  } else if (parsed.event === 'stream_end') {
+                    fullContent = String(parsed.data.full_content ?? fullContent);
+                  }
+                } catch {
+                  // ignore parse errors
+                }
+              }
+            }
+          }
+
+          if (fullContent) {
+            const assistantMessage: Message = {
+              id: `assist-${Date.now()}`,
+              role: 'assistant',
+              content: fullContent,
+              timestamp: new Date().toISOString(),
+            };
+            setMessages((prev) => [...prev, assistantMessage]);
+          }
+          setIsLoading(false);
+        })
+        .catch(() => {
+          setError('Network error during clarification.');
+          setIsLoading(false);
+        });
+    },
+    [clarification],
+  );
 
   const sendMessage = useCallback(
     (content: string) => {
@@ -441,6 +563,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
       connectionStatus,
       error,
       streamingMessage,
+      clarification,
     }),
     [
       conversationId,
@@ -451,6 +574,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
       connectionStatus,
       error,
       streamingMessage,
+      clarification,
     ],
   );
 
@@ -460,8 +584,9 @@ export function ChatProvider({ children }: ChatProviderProps) {
       startNewConversation,
       loadConversation,
       clearError,
+      respondToClarification,
     }),
-    [sendMessage, startNewConversation, loadConversation, clearError],
+    [sendMessage, startNewConversation, loadConversation, clearError, respondToClarification],
   );
 
   return (

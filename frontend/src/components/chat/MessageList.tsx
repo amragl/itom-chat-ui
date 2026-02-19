@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Message } from '@/types';
 import ChatBubble from './ChatBubble';
+import ClarificationBubble from './ClarificationBubble';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -13,6 +14,14 @@ interface MessageListProps {
   messages: Message[];
   /** A partial message being streamed in real time (token-by-token). */
   streamingMessage?: Partial<Message> | null;
+  /** Active clarification request from the orchestrator, if any. */
+  clarification?: {
+    question: string;
+    options: string[];
+    pendingToken: string;
+  } | null;
+  /** Called when the user responds to a clarification prompt. */
+  onClarificationRespond?: (answer: string) => void;
 }
 
 /**
@@ -37,7 +46,12 @@ const AUTO_SCROLL_THRESHOLD = 150;
  * - Renders a streaming message with a typing indicator when present.
  * - Displays an empty state when there are no messages.
  */
-export default function MessageList({ messages, streamingMessage }: MessageListProps) {
+export default function MessageList({
+  messages,
+  streamingMessage,
+  clarification,
+  onClarificationRespond,
+}: MessageListProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const [isNearBottom, setIsNearBottom] = useState(true);
@@ -103,7 +117,8 @@ export default function MessageList({ messages, streamingMessage }: MessageListP
         }
       : null;
 
-  const hasMessages = messages.length > 0 || streamingAsMessage !== null;
+  const hasMessages =
+    messages.length > 0 || streamingAsMessage !== null || clarification !== null;
 
   return (
     <div className="relative flex h-full flex-col">
@@ -150,6 +165,15 @@ export default function MessageList({ messages, streamingMessage }: MessageListP
             {/* Streaming message with typing indicator */}
             {streamingAsMessage && (
               <ChatBubble message={streamingAsMessage} isStreaming />
+            )}
+
+            {/* Clarification bubble — shown when orchestrator needs disambiguation */}
+            {clarification && onClarificationRespond && (
+              <ClarificationBubble
+                question={clarification.question}
+                options={clarification.options}
+                onRespond={onClarificationRespond}
+              />
             )}
 
             {/* Invisible scroll anchor */}

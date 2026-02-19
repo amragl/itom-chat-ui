@@ -125,6 +125,15 @@ async def stream_chat_response(
             #   },
             #   ...
             # }
+            # Alternatively, for ambiguous queries:
+            # {
+            #   "response_type": "clarification",
+            #   "message_id": "...",
+            #   "question": "...",
+            #   "options": [...],
+            #   "pending_message_token": "...",
+            #   ...
+            # }
             try:
                 orch_data = response.json()
             except Exception:
@@ -137,6 +146,33 @@ async def stream_chat_response(
                     },
                 }
                 yield f"data: {json.dumps(error_event)}\n\n"
+                return
+
+            # SE-012: Handle clarification response from orchestrator
+            if orch_data.get("response_type") == "clarification":
+                clarification_event = {
+                    "event": "clarification",
+                    "data": {
+                        "question": orch_data.get("question", ""),
+                        "options": orch_data.get("options", []),
+                        "pending_message_token": orch_data.get("pending_message_token", ""),
+                        "message_id": orch_data.get("message_id", message_id),
+                    },
+                }
+                yield f"data: {json.dumps(clarification_event)}\n\n"
+                # Emit stream_end with empty content so the client knows the stream is done
+                end_event = {
+                    "event": "stream_end",
+                    "data": {
+                        "message_id": orch_data.get("message_id", message_id),
+                        "full_content": "",
+                        "agent_id": agent_id,
+                        "agent_name": "orchestrator",
+                        "conversation_id": conversation_id,
+                        "timestamp": datetime.now(UTC).isoformat(),
+                    },
+                }
+                yield f"data: {json.dumps(end_event)}\n\n"
                 return
 
             # Extract the actual content from the nested response
