@@ -17,8 +17,8 @@ import { ChatErrorBoundary, ChatHeader, MessageInput, MessageList } from '@/comp
  * through the context hooks.
  */
 function ChatView() {
-  const { messages, isLoading, isStreaming, error, streamingMessage } = useChatState();
-  const { sendMessage, clearError } = useChatActions();
+  const { messages, isLoading, isStreaming, error, streamingMessage, clarification } = useChatState();
+  const { sendMessage, clearError, respondToClarification } = useChatActions();
 
   return (
     <div className="flex h-full flex-col">
@@ -48,7 +48,12 @@ function ChatView() {
 
       {/* Message area */}
       <div className="flex-1 overflow-hidden">
-        <MessageList messages={messages} streamingMessage={streamingMessage} />
+        <MessageList
+          messages={messages}
+          streamingMessage={streamingMessage}
+          clarification={clarification}
+          onClarificationRespond={respondToClarification}
+        />
       </div>
 
       {/* Input area */}

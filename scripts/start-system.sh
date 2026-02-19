@@ -30,7 +30,7 @@ resolve_dir() {
   [ -d "$path" ] && echo "$path" || echo ""
 }
 
-CMDB_MCP_DIR="$(resolve_dir servicenow-cmdb-mcp)"
+CMDB_MCP_DIR="$(resolve_dir snow-cmdb-agent)"
 CSA_AGENT_DIR="$(resolve_dir snow-csa-agent)"
 DISCOVERY_AGENT_DIR="$(resolve_dir snow-discovery-agent)"
 ASSET_AGENT_DIR="$(resolve_dir snow-asset-agent)"
@@ -171,24 +171,9 @@ for port in "${ALL_PORTS[@]}"; do
 done
 
 # ---------------------------------------------------------------------------
-# 1. CMDB MCP Server (port 8002)
+# 1. CMDB Agent (port 8002)
 # ---------------------------------------------------------------------------
-if [ -n "$CMDB_MCP_DIR" ]; then
-  log "Starting CMDB MCP Server on port $CMDB_MCP_PORT..."
-  cd "$CMDB_MCP_DIR"
-  local_python=".venv/bin/python"
-  [ -f "$local_python" ] || local_python="python"
-  VALIDATE_ON_STARTUP=false "$local_python" -c "
-from src.server import mcp
-from src.health import record_start_time
-record_start_time()
-mcp.run(transport='streamable-http', host='0.0.0.0', port=$CMDB_MCP_PORT)
-" &
-  PIDS+=($!)
-  cd "$CHAT_UI_DIR"
-else
-  skip "servicenow-cmdb-mcp not found, skipping"
-fi
+start_fastmcp_agent "$CMDB_MCP_DIR" "src.server" $CMDB_MCP_PORT "CMDB MCP Server"
 
 # ---------------------------------------------------------------------------
 # 2-6. Specialized MCP agents (ports 8003-8007)

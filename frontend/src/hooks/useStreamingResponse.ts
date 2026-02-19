@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { StreamErrorData, StreamingState, StreamingStatus } from '@/types';
+import type { ClarificationData, StreamErrorData, StreamingState, StreamingStatus } from '@/types';
 
 /**
  * Options for configuring the streaming response hook.
@@ -21,6 +21,9 @@ export interface UseStreamingResponseOptions {
 
   /** Called when an error occurs during streaming. */
   onError?: (error: StreamErrorData) => void;
+
+  /** Called when the orchestrator returns a clarification request. */
+  onClarification?: (data: ClarificationData) => void;
 }
 
 /**
@@ -48,6 +51,7 @@ const INITIAL_STATE: StreamingState = {
   agentId: null,
   error: null,
   hasReceivedFirstToken: false,
+  clarificationData: null,
 };
 
 /**
@@ -83,16 +87,16 @@ function resolveApiBaseUrl(override?: string): string {
 export function useStreamingResponse(
   options: UseStreamingResponseOptions = {},
 ): UseStreamingResponseReturn {
-  const { apiBaseUrl, onStreamStart, onToken, onStreamEnd, onError } = options;
+  const { apiBaseUrl, onStreamStart, onToken, onStreamEnd, onError, onClarification } = options;
 
   const [state, setState] = useState<StreamingState>(INITIAL_STATE);
 
   // Refs for the AbortController and latest callback references
   const abortControllerRef = useRef<AbortController | null>(null);
-  const callbacksRef = useRef({ onStreamStart, onToken, onStreamEnd, onError });
+  const callbacksRef = useRef({ onStreamStart, onToken, onStreamEnd, onError, onClarification });
   useEffect(() => {
-    callbacksRef.current = { onStreamStart, onToken, onStreamEnd, onError };
-  }, [onStreamStart, onToken, onStreamEnd, onError]);
+    callbacksRef.current = { onStreamStart, onToken, onStreamEnd, onError, onClarification };
+  }, [onStreamStart, onToken, onStreamEnd, onError, onClarification]);
 
   /**
    * Parse a single SSE "data: ..." line into a structured event.
@@ -308,6 +312,24 @@ export function useStreamingResponse(
                     error: errorData,
                   }));
                   callbacksRef.current.onError?.(errorData);
+                  break;
+                }
+
+                case 'clarification': {
+                  const clarificationData: ClarificationData = {
+                    question: String(data.question ?? ''),
+                    options: Array.isArray(data.options)
+                      ? (data.options as string[])
+                      : [],
+                    pending_message_token: String(data.pending_message_token ?? ''),
+                    message_id: data.message_id ? String(data.message_id) : undefined,
+                  };
+                  setState((prev) => ({
+                    ...prev,
+                    status: 'clarification',
+                    clarificationData,
+                  }));
+                  callbacksRef.current.onClarification?.(clarificationData);
                   break;
                 }
 
