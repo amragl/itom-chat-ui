@@ -2,6 +2,8 @@
 
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import type { Components } from 'react-markdown';
+import MermaidDiagram from './MermaidDiagram';
 import type { Message } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -79,6 +81,42 @@ function formatTimestamp(iso: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// Markdown code block renderer — renders mermaid blocks as diagrams
+// ---------------------------------------------------------------------------
+
+const markdownComponents: Components = {
+  code({ className, children, ...props }) {
+    const language = /language-(\w+)/.exec(className ?? '')?.[1];
+    const code = String(children).replace(/\n$/, '');
+
+    if (language === 'mermaid') {
+      return <MermaidDiagram chart={code} />;
+    }
+
+    // Inline code (no className) vs fenced code block
+    const isBlock = className != null;
+    if (isBlock) {
+      return (
+        <pre className="overflow-x-auto rounded-lg bg-neutral-100 p-3 dark:bg-neutral-700">
+          <code className={className} {...props}>
+            {children}
+          </code>
+        </pre>
+      );
+    }
+
+    return (
+      <code
+        className="rounded bg-neutral-100 px-1 py-0.5 text-sm dark:bg-neutral-700"
+        {...props}
+      >
+        {children}
+      </code>
+    );
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Props
 // ---------------------------------------------------------------------------
 
@@ -113,7 +151,7 @@ export default function ChatBubble({ message, isStreaming = false }: ChatBubbleP
     return (
       <div className="flex justify-center px-4 py-2">
         <div className="max-w-md rounded-lg bg-neutral-100 px-4 py-2 text-center text-xs text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
-          <Markdown remarkPlugins={[remarkGfm]}>{message.content}</Markdown>
+          <Markdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{message.content}</Markdown>
         </div>
       </div>
     );
@@ -126,7 +164,7 @@ export default function ChatBubble({ message, isStreaming = false }: ChatBubbleP
         <div className="max-w-[75%] lg:max-w-[60%]">
           <div className="rounded-2xl rounded-br-md bg-primary-600 px-4 py-2.5 text-white shadow-sm">
             <div className="prose prose-sm prose-invert max-w-none break-words [&_a]:text-primary-200 [&_a]:underline [&_code]:rounded [&_code]:bg-primary-700 [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-primary-100 [&_p]:m-0 [&_p]:leading-relaxed [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-primary-700 [&_pre]:p-3">
-              <Markdown remarkPlugins={[remarkGfm]}>{message.content}</Markdown>
+              <Markdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{message.content}</Markdown>
             </div>
           </div>
           <div className="mt-1 flex justify-end">
@@ -178,7 +216,7 @@ export default function ChatBubble({ message, isStreaming = false }: ChatBubbleP
         {/* Message content */}
         <div className="rounded-2xl rounded-tl-md border border-neutral-200 bg-white px-4 py-2.5 shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
           <div className="prose prose-sm max-w-none break-words text-neutral-800 dark:text-neutral-200 [&_a]:text-primary-600 [&_a]:underline dark:[&_a]:text-primary-400 [&_code]:rounded [&_code]:bg-neutral-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-sm dark:[&_code]:bg-neutral-700 [&_p]:m-0 [&_p]:leading-relaxed [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-neutral-100 [&_pre]:p-3 dark:[&_pre]:bg-neutral-700 [&_table]:w-full [&_td]:border [&_td]:border-neutral-200 [&_td]:px-2 [&_td]:py-1 dark:[&_td]:border-neutral-600 [&_th]:border [&_th]:border-neutral-200 [&_th]:bg-neutral-50 [&_th]:px-2 [&_th]:py-1 dark:[&_th]:border-neutral-600 dark:[&_th]:bg-neutral-700">
-            <Markdown remarkPlugins={[remarkGfm]}>{message.content}</Markdown>
+            <Markdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{message.content}</Markdown>
           </div>
         </div>
 
