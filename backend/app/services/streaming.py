@@ -26,6 +26,10 @@ from ..config import get_settings
 
 logger = logging.getLogger(__name__)
 
+# Session agent store: maps conversation_id -> last successful agent_id
+# This enables conversational continuity for follow-up messages.
+_session_agents: dict[str, str] = {}
+
 
 async def stream_chat_response(
     content: str,
@@ -66,6 +70,9 @@ async def stream_chat_response(
         "message": content,
         "target_agent": agent_target,
         "session_id": conversation_id,
+        "context": {
+            "last_agent_id": _session_agents.get(conversation_id),
+        },
     }
 
     try:
@@ -136,6 +143,14 @@ async def stream_chat_response(
             agent_response_text = _extract_content(orch_data)
             actual_agent_id = orch_data.get("agent_id", agent_id)
             actual_agent_name = orch_data.get("agent_name", "Agent")
+
+            # Store the agent for session continuity
+            if actual_agent_id and actual_agent_id != "orchestrator":
+                if len(_session_agents) > 1000:
+                    # Drop the oldest entry
+                    oldest_key = next(iter(_session_agents))
+                    del _session_agents[oldest_key]
+                _session_agents[conversation_id] = actual_agent_id
 
             # Emit the full response as a single token event
             if agent_response_text:
