@@ -1,4 +1,5 @@
 import type { Artifact } from './artifact';
+import type { SuggestedAction } from './streaming';
 
 /**
  * The role of the entity that sent a message.
@@ -32,6 +33,9 @@ export interface Message {
 
   /** Structured artifacts embedded in or attached to this message (e.g., reports, dashboards). */
   artifacts?: Artifact[];
+
+  /** Suggested follow-up actions displayed as pill buttons below agent responses. */
+  suggestedActions?: SuggestedAction[];
 }
 
 /**

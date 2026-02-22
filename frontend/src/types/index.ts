@@ -26,6 +26,7 @@ export type {
   StreamEndData,
   StreamErrorData,
   ClarificationData,
+  SuggestedAction,
   StreamEvent,
   StreamingStatus,
   StreamingState,

@@ -53,6 +53,7 @@ function ChatView() {
           streamingMessage={streamingMessage}
           clarification={clarification}
           onClarificationRespond={respondToClarification}
+          onSuggestedAction={sendMessage}
         />
       </div>
 

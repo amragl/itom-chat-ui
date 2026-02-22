@@ -31,6 +31,18 @@ export interface TokenData {
 }
 
 /**
+ * A suggested follow-up action rendered as a pill button below agent responses.
+ */
+export interface SuggestedAction {
+  /** Short label displayed on the pill button. */
+  label: string;
+  /** The chat message to send when the user clicks the pill. */
+  message: string;
+  /** Optional agent to route to directly (bypasses orchestrator routing). */
+  agent_target?: string;
+}
+
+/**
  * Data payload for the ``stream_end`` SSE event.
  * Emitted once when the full response has been delivered.
  */
@@ -40,6 +52,7 @@ export interface StreamEndData {
   agent_id: string;
   conversation_id: string;
   timestamp: string;
+  suggested_actions?: SuggestedAction[];
 }
 
 /**

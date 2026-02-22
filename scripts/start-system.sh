@@ -171,6 +171,24 @@ for port in "${ALL_PORTS[@]}"; do
 done
 
 # ---------------------------------------------------------------------------
+# ServiceNow credentials — shared by all agents.
+# Source from CMDB agent .env if present, then allow overrides.
+# ---------------------------------------------------------------------------
+CMDB_ENV="$PROJECTS_DIR/snow-cmdb-agent/.env"
+if [ -f "$CMDB_ENV" ] && [ -z "${SERVICENOW_INSTANCE:-}" ]; then
+  set -a
+  # shellcheck disable=SC1090
+  source "$CMDB_ENV"
+  set +a
+fi
+# Ensure SERVICENOW_INSTANCE has https:// scheme
+case "${SERVICENOW_INSTANCE:-}" in
+  https://*|http://*) ;;
+  ?*) export SERVICENOW_INSTANCE="https://$SERVICENOW_INSTANCE" ;;
+esac
+export SERVICENOW_INSTANCE="${SERVICENOW_INSTANCE:-https://dev354780.service-now.com}"
+
+# ---------------------------------------------------------------------------
 # 1. CMDB Agent (port 8002)
 # ---------------------------------------------------------------------------
 start_fastmcp_agent "$CMDB_MCP_DIR" "src.server" $CMDB_MCP_PORT "CMDB MCP Server"
@@ -196,6 +214,7 @@ if [ -n "$ORCHESTRATOR_DIR" ]; then
   export ORCH_ASSET_AGENT_URL="http://localhost:$ASSET_PORT/mcp"
   export ORCH_AUDITOR_AGENT_URL="http://localhost:$AUDITOR_PORT/mcp"
   export ORCH_DOCUMENTATOR_AGENT_URL="http://localhost:$DOCUMENTATOR_PORT/mcp"
+  export ORCH_SN_INSTANCE="${ORCH_SN_INSTANCE:-$SERVICENOW_INSTANCE}"
 
   local_python=".venv/bin/python"
   [ -f "$local_python" ] || local_python="python"

@@ -67,7 +67,7 @@ function getDefaultUrl(): string {
   if (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_WS_URL) {
     return process.env.NEXT_PUBLIC_WS_URL;
   }
-  return 'ws://localhost:8000/ws';
+  return 'ws://localhost:8001/ws';
 }
 
 /**
