@@ -359,7 +359,7 @@ class TestCallOrchestratorTool:
                 conversation_id="conv-1",
             )
 
-        assert result == "Found 5 production servers."
+        assert result == ("Found 5 production servers.", [])
 
     @pytest.mark.asyncio
     async def test_unknown_tool(self):
@@ -372,7 +372,9 @@ class TestCallOrchestratorTool:
             conversation_id="conv-1",
         )
 
-        assert "Unknown tool" in result
+        text, actions = result
+        assert "Unknown tool" in text
+        assert actions == []
 
     @pytest.mark.asyncio
     async def test_orchestrator_error_status(self):
@@ -393,8 +395,10 @@ class TestCallOrchestratorTool:
                 conversation_id="conv-1",
             )
 
-        assert "Error" in result
-        assert "500" in result
+        text, actions = result
+        assert "Error" in text
+        assert "500" in text
+        assert actions == []
 
     @pytest.mark.asyncio
     async def test_orchestrator_connect_error(self):
@@ -414,7 +418,9 @@ class TestCallOrchestratorTool:
                 conversation_id="conv-1",
             )
 
-        assert "Cannot connect" in result
+        text, actions = result
+        assert "Cannot connect" in text
+        assert actions == []
 
     @pytest.mark.asyncio
     async def test_orchestrator_timeout(self):
@@ -434,7 +440,9 @@ class TestCallOrchestratorTool:
                 conversation_id="conv-1",
             )
 
-        assert "too long" in result
+        text, actions = result
+        assert "too long" in text
+        assert actions == []
 
     @pytest.mark.asyncio
     async def test_passes_context_from_tool_input(self):
@@ -540,8 +548,10 @@ class TestCallOrchestratorTool:
             )
 
         # Should be JSON string since no agent_response key
-        parsed = json.loads(result)
+        text, actions = result
+        parsed = json.loads(text)
         assert "dispatched_to" in parsed
+        assert actions == []
 
 
 # ---------------------------------------------------------------------------
