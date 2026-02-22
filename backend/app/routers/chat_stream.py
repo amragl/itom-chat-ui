@@ -29,7 +29,7 @@ from pydantic import BaseModel
 
 from ..config import get_settings
 from ..models.streaming import StreamChatRequest
-from ..services.streaming import stream_chat_response
+from ..services.claude_service import stream_claude_response
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +72,7 @@ async def stream_chat(request: StreamChatRequest) -> StreamingResponse:
     )
 
     return StreamingResponse(
-        content=stream_chat_response(
+        content=stream_claude_response(
             content=request.content,
             conversation_id=request.conversation_id,
             agent_target=request.agent_target,
@@ -175,12 +175,12 @@ async def clarify_chat(request: ClarifyRequest) -> StreamingResponse:
 
             # Extract content and emit as single token
             from ..services.streaming import _extract_content
-            content_text = _extract_content(orch_data)
+            content_text, suggested_actions = _extract_content(orch_data)
             if content_text:
                 yield f"data: {_json.dumps({'event': 'token', 'data': {'token': content_text, 'message_id': message_id}})}\n\n"
 
             # stream_end
-            yield f"data: {_json.dumps({'event': 'stream_end', 'data': {'message_id': message_id, 'full_content': content_text or '', 'agent_id': agent_id, 'agent_name': agent_name, 'conversation_id': request.conversation_id, 'timestamp': datetime.now(UTC).isoformat()}})}\n\n"
+            yield f"data: {_json.dumps({'event': 'stream_end', 'data': {'message_id': message_id, 'full_content': content_text or '', 'agent_id': agent_id, 'agent_name': agent_name, 'conversation_id': request.conversation_id, 'timestamp': datetime.now(UTC).isoformat(), 'suggested_actions': suggested_actions}})}\n\n"
 
         except httpx.ConnectError:
             import json as _json

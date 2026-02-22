@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { ClarificationData, StreamErrorData, StreamingState, StreamingStatus } from '@/types';
+import type { ClarificationData, StreamErrorData, StreamingState, StreamingStatus, SuggestedAction } from '@/types';
 
 /**
  * Options for configuring the streaming response hook.
@@ -17,7 +17,7 @@ export interface UseStreamingResponseOptions {
   onToken?: (token: string, accumulated: string) => void;
 
   /** Called when the stream completes with the full content. */
-  onStreamEnd?: (fullContent: string, messageId: string, agentId: string) => void;
+  onStreamEnd?: (fullContent: string, messageId: string, agentId: string, suggestedActions?: SuggestedAction[]) => void;
 
   /** Called when an error occurs during streaming. */
   onError?: (error: StreamErrorData) => void;
@@ -289,6 +289,9 @@ export function useStreamingResponse(
                   const fullContent = String(data.full_content ?? accumulated);
                   const messageId = String(data.message_id ?? '');
                   const agentId = String(data.agent_id ?? '');
+                  const suggestedActions = Array.isArray(data.suggested_actions)
+                    ? (data.suggested_actions as SuggestedAction[])
+                    : undefined;
                   setState((prev) => ({
                     ...prev,
                     status: 'complete',
@@ -297,7 +300,7 @@ export function useStreamingResponse(
                     messageId: messageId || prev.messageId,
                     agentId: agentId || prev.agentId,
                   }));
-                  callbacksRef.current.onStreamEnd?.(fullContent, messageId, agentId);
+                  callbacksRef.current.onStreamEnd?.(fullContent, messageId, agentId, suggestedActions);
                   break;
                 }
 

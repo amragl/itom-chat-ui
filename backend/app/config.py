@@ -33,6 +33,12 @@ class Settings(BaseSettings):
     servicenow_instance: str = ""
     auth_token_cache_ttl: int = 300  # seconds (5 minutes)
 
+    # Claude AI settings (conversational layer)
+    anthropic_api_key: str = ""
+    claude_model: str = "claude-haiku-4-5-20251001"
+    claude_max_tokens: int = 4096
+    claude_temperature: float = 0.3
+
     @field_validator("auth_mode")
     @classmethod
     def validate_auth_mode(cls, value: str) -> str:

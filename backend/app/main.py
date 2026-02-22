@@ -34,6 +34,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             "DEV AUTH MODE ACTIVE -- all API requests bypass token validation. "
             "Do NOT use this in production."
         )
+    if settings.anthropic_api_key:
+        logger.info("Claude AI mode: ENABLED (model=%s)", settings.claude_model)
+    else:
+        logger.info("Claude AI mode: DISABLED (no CHAT_ANTHROPIC_API_KEY, using legacy routing)")
     logger.info("CORS origins: %s", settings.cors_origins)
     logger.info("Orchestrator URL: %s", settings.orchestrator_url)
     logger.info("Database URL: %s", settings.database_url)

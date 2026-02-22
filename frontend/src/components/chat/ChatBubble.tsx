@@ -4,6 +4,7 @@ import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Components } from 'react-markdown';
 import MermaidDiagram from './MermaidDiagram';
+import SuggestedActions from './SuggestedActions';
 import type { Message } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -18,11 +19,13 @@ function getAgentDisplayName(agentId: string | undefined): string {
   if (!agentId) return 'ITOM Agent';
 
   const names: Record<string, string> = {
+    'cmdb-agent': 'CMDB Agent',
     discovery: 'Discovery Agent',
     asset: 'Asset Agent',
     auditor: 'Auditor Agent',
     documentator: 'Documentator Agent',
     orchestrator: 'Orchestrator',
+    claude: 'ITOM Assistant',
   };
 
   return names[agentId] ?? agentId;
@@ -35,11 +38,13 @@ function getAgentInitials(agentId: string | undefined): string {
   if (!agentId) return 'AI';
 
   const initials: Record<string, string> = {
+    'cmdb-agent': 'CM',
     discovery: 'DI',
     asset: 'AS',
     auditor: 'AU',
     documentator: 'DO',
     orchestrator: 'OR',
+    claude: 'AI',
   };
 
   return initials[agentId] ?? agentId.slice(0, 2).toUpperCase();
@@ -53,11 +58,13 @@ function getAgentAvatarColor(agentId: string | undefined): string {
   if (!agentId) return 'bg-neutral-500';
 
   const colors: Record<string, string> = {
+    'cmdb-agent': 'bg-warning-600',
     discovery: 'bg-primary-600',
     asset: 'bg-secondary-600',
     auditor: 'bg-error-600',
     documentator: 'bg-accent-600',
     orchestrator: 'bg-success-600',
+    claude: 'bg-violet-600',
   };
 
   return colors[agentId] ?? 'bg-neutral-500';
@@ -85,6 +92,13 @@ function formatTimestamp(iso: string): string {
 // ---------------------------------------------------------------------------
 
 const markdownComponents: Components = {
+  a({ href, children, ...props }) {
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
+        {children}
+      </a>
+    );
+  },
   code({ className, children, ...props }) {
     const language = /language-(\w+)/.exec(className ?? '')?.[1];
     const code = String(children).replace(/\n$/, '');
@@ -125,6 +139,8 @@ interface ChatBubbleProps {
   message: Message;
   /** Whether this message is currently being streamed (token-by-token). */
   isStreaming?: boolean;
+  /** Called when a suggested action pill is clicked. */
+  onSuggestedAction?: (message: string, agentTarget?: string) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -142,7 +158,7 @@ interface ChatBubbleProps {
  * Message content is rendered as markdown using react-markdown with
  * GitHub Flavored Markdown support (tables, strikethrough, task lists, etc.).
  */
-export default function ChatBubble({ message, isStreaming = false }: ChatBubbleProps) {
+export default function ChatBubble({ message, isStreaming = false, onSuggestedAction }: ChatBubbleProps) {
   const isUser = message.role === 'user';
   const isSystem = message.role === 'system';
 
@@ -219,6 +235,14 @@ export default function ChatBubble({ message, isStreaming = false }: ChatBubbleP
             <Markdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{message.content}</Markdown>
           </div>
         </div>
+
+        {/* Suggested follow-up actions */}
+        {!isStreaming && onSuggestedAction && message.suggestedActions?.length ? (
+          <SuggestedActions
+            actions={message.suggestedActions}
+            onActionClick={onSuggestedAction}
+          />
+        ) : null}
 
         {/* Timestamp */}
         <div className="mt-1">

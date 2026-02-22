@@ -176,7 +176,7 @@ async def stream_chat_response(
                 return
 
             # Extract the actual content from the nested response
-            agent_response_text = _extract_content(orch_data)
+            agent_response_text, suggested_actions = _extract_content(orch_data)
             actual_agent_id = orch_data.get("agent_id", agent_id)
             actual_agent_name = orch_data.get("agent_name", "Agent")
 
@@ -251,6 +251,7 @@ async def stream_chat_response(
             "agent_name": actual_agent_name,
             "conversation_id": conversation_id,
             "timestamp": datetime.now(UTC).isoformat(),
+            "suggested_actions": suggested_actions,
         },
     }
     yield f"data: {json.dumps(end_event)}\n\n"
@@ -264,21 +265,27 @@ async def stream_chat_response(
     )
 
 
-def _extract_content(orch_data: dict) -> str:
+def _extract_content(orch_data: dict) -> tuple[str, list[dict[str, str]]]:
     """Extract the displayable text content from an orchestrator response.
 
     Tries several paths to find the agent's actual response text:
     1. response.result.agent_response  (dispatch handler result)
     2. response.result.dispatched_to   (default stub)
     3. Flat string fallback
+
+    Returns:
+        A tuple of (text, suggested_actions).
     """
     resp = orch_data.get("response", {})
     if isinstance(resp, dict):
         result = resp.get("result", {})
         if isinstance(result, dict):
+            actions = result.get("suggested_actions", [])
+            if not isinstance(actions, list):
+                actions = []
             # Real agent response from dispatch handler
             if "agent_response" in result:
-                return result["agent_response"]
+                return result["agent_response"], actions
             # Default stub response
             if "dispatched_to" in result:
                 agent = result.get("dispatched_to", "unknown")
@@ -287,15 +294,15 @@ def _extract_content(orch_data: dict) -> str:
                     "The agent acknowledged the request but no detailed response "
                     "was returned. This may mean the agent's MCP server is not "
                     "running or not connected."
-                )
+                ), []
             # Generic result with some data
             if result:
-                return json.dumps(result, indent=2)
+                return json.dumps(result, indent=2), []
         # response is a dict but no result key
         if resp:
-            return json.dumps(resp, indent=2)
+            return json.dumps(resp, indent=2), []
 
     # Fallback: status message
     status = orch_data.get("status", "unknown")
     agent = orch_data.get("agent_name", orch_data.get("agent_id", "unknown"))
-    return f"Response from {agent} (status: {status})"
+    return f"Response from {agent} (status: {status})", []

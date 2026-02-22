@@ -9,7 +9,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import type { Agent, ClarificationData, Message, WebSocketChatPayload, WebSocketMessage } from '@/types';
+import type { Agent, ClarificationData, Message, SuggestedAction, WebSocketChatPayload, WebSocketMessage } from '@/types';
 import { apiClient } from '@/lib/api';
 import { buildHelpText, buildPrompt, parseCommand } from '@/lib/commands';
 import { useStreamingResponse } from '@/hooks/useStreamingResponse';
@@ -63,7 +63,7 @@ export interface ChatState {
  */
 export interface ChatActions {
   /** Send a message in the current conversation using streaming. */
-  sendMessage: (content: string) => void;
+  sendMessage: (content: string, agentTarget?: string) => void;
 
   /** Start a new conversation (clears messages, generates new ID). */
   startNewConversation: () => void;
@@ -193,7 +193,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
   // --- Streaming response callbacks ---
   // Defined before the hook to avoid circular dependency.
   const handleStreamEnd = useCallback(
-    (fullContent: string, messageId: string, agentId: string) => {
+    (fullContent: string, messageId: string, agentId: string, suggestedActions?: SuggestedAction[]) => {
       // When streaming completes, add the final agent message to the
       // messages array. The hook itself transitions to 'complete' status.
       const finalMessage: Message = {
@@ -202,6 +202,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
         content: fullContent,
         timestamp: new Date().toISOString(),
         agentId: agentId || undefined,
+        suggestedActions: suggestedActions?.length ? suggestedActions : undefined,
       };
       setMessages((prev) => [...prev, finalMessage]);
     },
@@ -405,7 +406,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
   );
 
   const sendMessage = useCallback(
-    (content: string) => {
+    (content: string, agentTarget?: string) => {
       if (!conversationIdRef.current || isLoading || isStreaming) return;
 
       const convId = conversationIdRef.current;
@@ -512,8 +513,9 @@ export function ChatProvider({ children }: ChatProviderProps) {
         },
       });
 
-      // Start the streaming request — always route through the orchestrator
-      startStreaming(content, convId);
+      // Start the streaming request — use explicit agent target if provided
+      // (e.g. from suggested action pills that target a specific agent)
+      startStreaming(content, convId, agentTarget);
       setIsLoading(false);
     },
     [isLoading, isStreaming, messages, startStreaming, wsSendMessage],

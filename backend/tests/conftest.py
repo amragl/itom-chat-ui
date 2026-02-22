@@ -13,6 +13,7 @@ import os
 # picks up dev mode on its first creation.
 os.environ.setdefault("CHAT_AUTH_MODE", "dev")
 os.environ.setdefault("CHAT_DATABASE_URL", "sqlite:///:memory:")
+os.environ.setdefault("CHAT_ANTHROPIC_API_KEY", "")
 
 from collections.abc import AsyncIterator  # noqa: E402
 

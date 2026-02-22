@@ -22,6 +22,8 @@ interface MessageListProps {
   } | null;
   /** Called when the user responds to a clarification prompt. */
   onClarificationRespond?: (answer: string) => void;
+  /** Called when a suggested action pill is clicked. */
+  onSuggestedAction?: (message: string, agentTarget?: string) => void;
 }
 
 /**
@@ -51,6 +53,7 @@ export default function MessageList({
   streamingMessage,
   clarification,
   onClarificationRespond,
+  onSuggestedAction,
 }: MessageListProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -159,7 +162,7 @@ export default function MessageList({
         ) : (
           <div className="space-y-1 py-4">
             {messages.map((msg) => (
-              <ChatBubble key={msg.id} message={msg} />
+              <ChatBubble key={msg.id} message={msg} onSuggestedAction={onSuggestedAction} />
             ))}
 
             {/* Streaming message with typing indicator */}
