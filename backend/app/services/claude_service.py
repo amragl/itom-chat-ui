@@ -102,6 +102,8 @@ CSA (create_service_request):
 proposed_action, risk_level) — create RITM with per-CI tasks
   create_service_request(description) — generic service request
   check_approval_status(ritm_sys_id) — approval state
+  approve_remediation_request(ritm_sys_id, comments) — approve a pending RITM
+  reject_remediation_request(ritm_sys_id, comments) — reject a pending RITM (comments required)
   get_request_details(req_sys_id) — full request tree
 
 TOOL_HINT RULES:
@@ -485,6 +487,10 @@ async def stream_claude_response(
                         if tool_use_blocks:
                             tool_use_blocks[-1]["input_json"] += event.delta.partial_json
 
+        # Suggested actions collected from orchestrator tool responses
+        # (populated when tool calls return actions from the orchestrator)
+        collected_actions: list[dict] = []
+
         # If Claude wants to call tools, execute them and get a follow-up response
         if tool_use_blocks:
             # Build the assistant message with tool_use blocks for history
@@ -523,15 +529,17 @@ async def stream_claude_response(
                     )
                     tool_input = {"query": content, "_parse_error": str(e)}
 
-                result = await _call_orchestrator_tool(
+                result_text, actions = await _call_orchestrator_tool(
                     tool_name=tool_block["name"],
                     tool_input=tool_input,
                     conversation_id=conversation_id,
                 )
+                if actions:
+                    collected_actions = actions
                 tool_results.append({
                     "type": "tool_result",
                     "tool_use_id": tool_block["id"],
-                    "content": result,
+                    "content": result_text,
                 })
 
             # Add tool results to history
@@ -563,15 +571,18 @@ async def stream_claude_response(
         if full_content:
             history.add(conversation_id, {"role": "assistant", "content": full_content})
 
-        # Emit stream_end
-        yield _sse_event("stream_end", {
+        # Emit stream_end (include suggested_actions from orchestrator if any)
+        end_data: dict = {
             "message_id": message_id,
             "full_content": full_content,
             "agent_id": "claude",
             "agent_name": "ITOM Assistant",
             "conversation_id": conversation_id,
             "timestamp": datetime.now(UTC).isoformat(),
-        })
+        }
+        if collected_actions:
+            end_data["suggested_actions"] = collected_actions
+        yield _sse_event("stream_end", end_data)
 
     except anthropic.AuthenticationError:
         logger.error("Claude API authentication failed — check CHAT_ANTHROPIC_API_KEY")
@@ -614,7 +625,7 @@ async def _call_orchestrator_tool(
     tool_name: str,
     tool_input: dict,
     conversation_id: str,
-) -> str:
+) -> tuple[str, list[dict]]:
     """Call the ITOM orchestrator with an explicit target_agent.
 
     This bypasses the orchestrator's keyword router entirely by setting
@@ -626,13 +637,13 @@ async def _call_orchestrator_tool(
         conversation_id: Current conversation ID for session continuity.
 
     Returns:
-        The agent_response text, or an error description string.
+        A tuple of (agent_response_text, suggested_actions).
     """
     settings = get_settings()
     target_agent = TOOL_TO_AGENT.get(tool_name)
 
     if not target_agent:
-        return f"Unknown tool: {tool_name}"
+        return f"Unknown tool: {tool_name}", []
 
     query = tool_input.get("query", "")
     context = {k: v for k, v in tool_input.items() if k != "query"}
@@ -664,33 +675,38 @@ async def _call_orchestrator_tool(
                 )
                 return (
                     f"Error: The {target_agent} agent returned HTTP {response.status_code}. "
-                    "The agent may be temporarily unavailable."
+                    "The agent may be temporarily unavailable.",
+                    [],
                 )
 
             orch_data = response.json()
 
-            # Extract agent_response from nested structure
+            # Extract agent_response and suggested_actions from nested structure
             resp = orch_data.get("response", {})
+            actions: list[dict] = []
             if isinstance(resp, dict):
                 result = resp.get("result", {})
                 if isinstance(result, dict):
+                    actions = result.get("suggested_actions", [])
+                    if not isinstance(actions, list):
+                        actions = []
                     if "agent_response" in result:
-                        return result["agent_response"]
+                        return result["agent_response"], actions
                     if result:
-                        return json.dumps(result, indent=2)
+                        return json.dumps(result, indent=2), actions
 
             # Fallback: return the whole response as JSON for Claude to interpret
-            return json.dumps(orch_data, indent=2)
+            return json.dumps(orch_data, indent=2), actions
 
     except httpx.ConnectError:
         logger.error("Cannot connect to orchestrator for tool %s", tool_name)
         return (
             "Error: Cannot connect to the ITOM orchestrator. "
             "The orchestrator service may not be running."
-        )
+        ), []
     except httpx.ReadTimeout:
         logger.error("Orchestrator timeout for tool %s", tool_name)
-        return "Error: The orchestrator took too long to respond. Please try again."
+        return "Error: The orchestrator took too long to respond. Please try again.", []
     except Exception:
         logger.exception("Unexpected error calling orchestrator for tool %s", tool_name)
-        return "Error: An unexpected error occurred while contacting the agent."
+        return "Error: An unexpected error occurred while contacting the agent.", []
