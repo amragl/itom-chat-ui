@@ -494,8 +494,13 @@ async def stream_claude_response(
             for tool_block in tool_use_blocks:
                 try:
                     tool_input = json.loads(tool_block["input_json"])
-                except json.JSONDecodeError:
-                    tool_input = {"query": content}
+                except json.JSONDecodeError as e:
+                    logger.warning(
+                        "Malformed tool JSON from Claude: %s — raw: %s",
+                        e,
+                        tool_block["input_json"][:500],
+                    )
+                    tool_input = {"query": content, "_parse_error": str(e)}
                 assistant_content.append({
                     "type": "tool_use",
                     "id": tool_block["id"],
@@ -510,8 +515,13 @@ async def stream_claude_response(
             for tool_block in tool_use_blocks:
                 try:
                     tool_input = json.loads(tool_block["input_json"])
-                except json.JSONDecodeError:
-                    tool_input = {"query": content}
+                except json.JSONDecodeError as e:
+                    logger.warning(
+                        "Malformed tool JSON from Claude: %s — raw: %s",
+                        e,
+                        tool_block["input_json"][:500],
+                    )
+                    tool_input = {"query": content, "_parse_error": str(e)}
 
                 result = await _call_orchestrator_tool(
                     tool_name=tool_block["name"],

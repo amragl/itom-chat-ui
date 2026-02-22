@@ -47,7 +47,8 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str) -> None:
     }
     try:
         await websocket.send_text(json.dumps(welcome))
-    except Exception:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("WebSocket welcome send failed for %s: %s", client_id, exc)
         await manager.disconnect(client_id)
         return
 
