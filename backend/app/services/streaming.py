@@ -14,6 +14,7 @@ so the client can surface the failure gracefully.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import uuid
@@ -29,6 +30,7 @@ logger = logging.getLogger(__name__)
 # Session agent store: maps conversation_id -> last successful agent_id
 # This enables conversational continuity for follow-up messages.
 _session_agents: dict[str, str] = {}
+_session_agents_lock = asyncio.Lock()
 
 
 async def stream_chat_response(
@@ -182,11 +184,11 @@ async def stream_chat_response(
 
             # Store the agent for session continuity
             if actual_agent_id and actual_agent_id != "orchestrator":
-                if len(_session_agents) > 1000:
-                    # Drop the oldest entry
-                    oldest_key = next(iter(_session_agents))
-                    del _session_agents[oldest_key]
-                _session_agents[conversation_id] = actual_agent_id
+                async with _session_agents_lock:
+                    if len(_session_agents) > 1000:
+                        oldest_key = next(iter(_session_agents))
+                        del _session_agents[oldest_key]
+                    _session_agents[conversation_id] = actual_agent_id
 
             # Emit the full response as a single token event
             if agent_response_text:
