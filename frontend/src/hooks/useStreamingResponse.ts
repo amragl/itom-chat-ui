@@ -240,8 +240,15 @@ export function useStreamingResponse(
           const decoder = new TextDecoder();
           let buffer = '';
 
+          // Inactivity timeout: if no data received for 90 seconds,
+          // assume the connection dropped and break out of the loop.
+          const INACTIVITY_TIMEOUT_MS = 90_000;
+
           while (true) {
-            const { done, value } = await reader.read();
+            const timeoutPromise = new Promise<{ done: true; value: undefined }>(
+              (resolve) => setTimeout(() => resolve({ done: true, value: undefined }), INACTIVITY_TIMEOUT_MS),
+            );
+            const { done, value } = await Promise.race([reader.read(), timeoutPromise]);
             if (done) break;
 
             buffer += decoder.decode(value, { stream: true });
@@ -348,12 +355,22 @@ export function useStreamingResponse(
 
           // If we exited the loop without a stream_end event, mark as complete
           // with whatever content we accumulated (graceful degradation).
+          // Also call onStreamEnd so the message is persisted by ChatContext.
           setState((prev) => {
             if (prev.status === 'streaming') {
+              const finalContent = accumulated || prev.partialContent;
+              const msgId = prev.messageId ?? '';
+              const agId = prev.agentId ?? '';
+
+              // Fire onStreamEnd so ChatContext persists the partial message
+              if (finalContent) {
+                callbacksRef.current.onStreamEnd?.(finalContent, msgId, agId);
+              }
+
               return {
                 ...prev,
                 status: 'complete',
-                fullContent: accumulated || prev.partialContent,
+                fullContent: finalContent,
               };
             }
             return prev;
