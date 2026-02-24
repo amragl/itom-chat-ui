@@ -83,12 +83,15 @@ itom-chat-ui/
 │   │   │   └── streaming.py           # SSE streaming logic
 │   │   └── models/              # Pydantic request/response models
 │   ├── tests/
-│   │   ├── conftest.py          # Test fixtures
-│   │   ├── test_health.py       # Health endpoint tests
-│   │   ├── test_websocket.py    # WebSocket tests
-│   │   ├── test_database.py     # SQLite database tests
-│   │   ├── test_conversations.py # Conversation API tests
-│   │   └── test_artifact_detector.py # Artifact detection tests
+│   │   ├── conftest.py              # Test fixtures
+│   │   ├── test_health.py           # Health endpoint tests
+│   │   ├── test_websocket.py        # WebSocket tests
+│   │   ├── test_database.py         # SQLite database tests
+│   │   ├── test_conversations.py    # Conversation API tests
+│   │   ├── test_artifact_detector.py # Artifact detection tests
+│   │   ├── test_claude_service.py   # Claude AI service tests
+│   │   ├── test_clarification.py    # Clarification flow tests
+│   │   └── integration/             # Integration tests
 │   └── pyproject.toml
 ├── docs/
 │   └── api.md                   # API documentation
@@ -132,7 +135,7 @@ The development server starts at [http://localhost:3000](http://localhost:3000).
 ### Running Tests
 
 ```bash
-# Backend tests (85 tests)
+# Backend tests (122 tests)
 cd backend
 CHAT_AUTH_MODE=dev .venv/bin/python -m pytest tests/ -v
 
