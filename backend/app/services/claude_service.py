@@ -526,13 +526,17 @@ async def stream_claude_response(
     # Add user message to history
     history.add(conversation_id, {"role": "user", "content": content})
 
+    # Track whether stream_end has been emitted so the finally block can
+    # guarantee it is always sent (even after exceptions).
+    stream_end_emitted = False
+    full_content = ""
+
     try:
         import anthropic
 
         client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
         messages = history.get(conversation_id)
 
-        full_content = ""
         tool_use_blocks: list[dict] = []
 
         # First Claude call (may include tool_use)
@@ -714,6 +718,7 @@ async def stream_claude_response(
         if collected_artifacts:
             end_data["artifacts"] = collected_artifacts
         yield _sse_event("stream_end", end_data)
+        stream_end_emitted = True
 
     except anthropic.AuthenticationError:
         logger.error("Claude API authentication failed — check CHAT_ANTHROPIC_API_KEY")
@@ -731,6 +736,7 @@ async def stream_claude_response(
 
         async for event in stream_chat_response(content, conversation_id, agent_target):
             yield event
+        stream_end_emitted = True  # fallback emits its own stream_end
 
     except anthropic.APIError as exc:
         logger.warning("Claude API error (%s) — falling back to legacy streaming", exc)
@@ -738,6 +744,7 @@ async def stream_claude_response(
 
         async for event in stream_chat_response(content, conversation_id, agent_target):
             yield event
+        stream_end_emitted = True  # fallback emits its own stream_end
 
     except Exception:
         logger.exception("Unexpected error in Claude streaming for conversation %s", conversation_id)
@@ -745,6 +752,23 @@ async def stream_claude_response(
             "code": "CLAUDE_INTERNAL_ERROR",
             "message": "An unexpected error occurred with the AI assistant.",
         })
+
+    finally:
+        # Guarantee stream_end is always emitted so the frontend never hangs.
+        if not stream_end_emitted:
+            logger.warning(
+                "Emitting fallback stream_end for conversation %s (partial content: %d chars)",
+                conversation_id,
+                len(full_content),
+            )
+            yield _sse_event("stream_end", {
+                "message_id": message_id,
+                "full_content": full_content,
+                "agent_id": "claude",
+                "agent_name": "ITOM Assistant",
+                "conversation_id": conversation_id,
+                "timestamp": datetime.now(UTC).isoformat(),
+            })
 
 
 # ---------------------------------------------------------------------------
