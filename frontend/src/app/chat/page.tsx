@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { ChatProvider, useChatActions, useChatState } from '@/contexts';
 import { ChatErrorBoundary, ChatHeader, MessageInput, MessageList } from '@/components/chat';
 
@@ -7,18 +9,18 @@ import { ChatErrorBoundary, ChatHeader, MessageInput, MessageList } from '@/comp
 // Inner chat view (consumes ChatProvider context)
 // ---------------------------------------------------------------------------
 
-/**
- * ChatView renders the main chat interface composed of:
- * - ChatHeader (agent selector, new chat, connection status)
- * - MessageList (scrollable messages with streaming bubble)
- * - MessageInput (auto-resizing textarea with send)
- *
- * This component lives inside the ChatProvider and accesses state/actions
- * through the context hooks.
- */
 function ChatView() {
   const { messages, isLoading, isStreaming, error, streamingMessage, clarification } = useChatState();
-  const { sendMessage, clearError, respondToClarification } = useChatActions();
+  const { sendMessage, clearError, respondToClarification, loadConversation } = useChatActions();
+  const searchParams = useSearchParams();
+
+  // Load conversation from URL query param on mount
+  useEffect(() => {
+    const id = searchParams.get('id');
+    if (id) {
+      loadConversation(id);
+    }
+  }, [searchParams, loadConversation]);
 
   return (
     <div className="flex h-full flex-col">

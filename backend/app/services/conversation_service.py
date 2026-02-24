@@ -25,6 +25,7 @@ from ..database import (
     search_conversations,
     set_conversation_context,
     update_conversation_metadata,
+    update_conversation_title,
 )
 
 logger = logging.getLogger(__name__)
@@ -90,6 +91,10 @@ class ConversationService:
     def delete_conversation(self, conv_id: str) -> bool:
         """Delete a conversation and all its messages."""
         return delete_conversation(self._conn, conv_id)
+
+    def update_title(self, conv_id: str, title: str) -> bool:
+        """Update the title of a conversation."""
+        return update_conversation_title(self._conn, conv_id, title)
 
     # -- Messages -----------------------------------------------------------
 

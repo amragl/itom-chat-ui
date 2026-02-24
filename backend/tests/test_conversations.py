@@ -344,3 +344,68 @@ class TestContext:
             json={"context": {"key": "value"}},
         )
         assert response.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Title update
+# ---------------------------------------------------------------------------
+
+class TestUpdateTitle:
+    """Test the PATCH title endpoint."""
+
+    async def test_update_title(self, client: AsyncClient) -> None:
+        """PATCH /api/conversations/{id}/title should update the title."""
+        create_resp = await client.post(
+            "/api/conversations",
+            json={"title": "Original Title"},
+        )
+        conv_id = create_resp.json()["id"]
+
+        patch_resp = await client.patch(
+            f"/api/conversations/{conv_id}/title",
+            json={"title": "New Title"},
+        )
+        assert patch_resp.status_code == 200
+        data = patch_resp.json()
+        assert data["status"] == "updated"
+        assert data["conversation_id"] == conv_id
+
+        # Verify title was updated
+        get_resp = await client.get(f"/api/conversations/{conv_id}")
+        assert get_resp.json()["title"] == "New Title"
+
+    async def test_update_title_nonexistent(self, client: AsyncClient) -> None:
+        """PATCH title for nonexistent conversation should return 404."""
+        response = await client.patch(
+            "/api/conversations/nonexistent/title",
+            json={"title": "New Title"},
+        )
+        assert response.status_code == 404
+
+    async def test_update_title_empty_rejected(self, client: AsyncClient) -> None:
+        """PATCH with empty title should return 422."""
+        create_resp = await client.post(
+            "/api/conversations",
+            json={"title": "Original"},
+        )
+        conv_id = create_resp.json()["id"]
+
+        response = await client.patch(
+            f"/api/conversations/{conv_id}/title",
+            json={"title": ""},
+        )
+        assert response.status_code == 422
+
+    async def test_update_title_too_long_rejected(self, client: AsyncClient) -> None:
+        """PATCH with title > 200 chars should return 422."""
+        create_resp = await client.post(
+            "/api/conversations",
+            json={"title": "Original"},
+        )
+        conv_id = create_resp.json()["id"]
+
+        response = await client.patch(
+            f"/api/conversations/{conv_id}/title",
+            json={"title": "x" * 201},
+        )
+        assert response.status_code == 422

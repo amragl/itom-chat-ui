@@ -18,6 +18,7 @@ export type {
   WebSocketErrorPayload,
   WebSocketHeartbeatPayload,
 } from './websocket';
+export type { WorkItem, WorklogResponse } from './workitem';
 export type { ServiceNowUser, ServiceNowRoles } from './auth';
 export type {
   StreamEventType,

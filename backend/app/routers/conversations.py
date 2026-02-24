@@ -76,6 +76,17 @@ class AddMessageRequest(BaseModel):
     )
 
 
+class UpdateTitleRequest(BaseModel):
+    """Request body for updating a conversation's title."""
+
+    title: str = Field(
+        ...,
+        min_length=1,
+        max_length=200,
+        description="The new title for the conversation",
+    )
+
+
 class UpdateContextRequest(BaseModel):
     """Request body for updating conversation context (metadata)."""
 
@@ -218,6 +229,34 @@ async def delete_conversation(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Conversation '{conv_id}' not found.",
         )
+
+
+@router.patch(
+    "/conversations/{conv_id}/title",
+    summary="Update conversation title",
+    description="Update only the title of an existing conversation.",
+    responses={
+        200: {"description": "Title updated successfully"},
+        401: {"description": "Authentication required"},
+        404: {"description": "Conversation not found"},
+        422: {"description": "Invalid request payload"},
+    },
+)
+async def update_title(
+    conv_id: str,
+    request: UpdateTitleRequest,
+    _user: CurrentUser = Depends(get_current_user),
+    settings: Settings = Depends(get_settings),
+) -> dict[str, str]:
+    """Update the title of a conversation."""
+    service = get_conversation_service(settings)
+    updated = service.update_title(conv_id, request.title)
+    if not updated:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Conversation '{conv_id}' not found.",
+        )
+    return {"status": "updated", "conversation_id": conv_id}
 
 
 @router.get(

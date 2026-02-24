@@ -1,8 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useCallback, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
+import type { ConversationSummary } from '@/types';
+import { apiClient } from '@/lib/api';
 import { UserMenu } from '@/components/auth';
 
 /**
@@ -90,6 +93,48 @@ interface SidebarProps {
  */
 export default function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [conversations, setConversations] = useState<ConversationSummary[]>([]);
+
+  const fetchConversations = useCallback(async () => {
+    try {
+      const data = await apiClient.listConversations();
+      setConversations(data);
+    } catch {
+      // Non-fatal: sidebar still renders without conversations
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchConversations();
+    const interval = setInterval(fetchConversations, 30_000);
+    const onFocus = () => fetchConversations();
+    window.addEventListener('focus', onFocus);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [fetchConversations]);
+
+  const handleDeleteConversation = useCallback(
+    async (e: React.MouseEvent, convId: string) => {
+      e.preventDefault();
+      e.stopPropagation();
+      try {
+        await apiClient.deleteConversation(convId);
+        setConversations((prev) => prev.filter((c) => c.id !== convId));
+      } catch {
+        // Silently fail — the conversation will reappear on next refresh
+      }
+    },
+    [],
+  );
+
+  // Extract active conversation ID from the URL query string
+  const activeConvId =
+    typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search).get('id')
+      : null;
 
   return (
     <aside
@@ -135,7 +180,7 @@ export default function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
         })}
       </nav>
 
-      {/* Conversation list area -- populated in Phase 3 */}
+      {/* Conversation list */}
       <div className="flex flex-1 flex-col overflow-hidden border-t border-neutral-200 dark:border-neutral-700">
         {!collapsed && (
           <div className="px-4 py-3">
@@ -145,7 +190,44 @@ export default function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
           </div>
         )}
         <div className="flex-1 overflow-y-auto px-2">
-          {/* Conversation list items will be rendered here in Phase 3 */}
+          {conversations.map((conv) => {
+            const isActive = activeConvId === conv.id;
+            return (
+              <button
+                key={conv.id}
+                type="button"
+                onClick={() => router.push(`/chat?id=${conv.id}`)}
+                title={conv.title || 'Untitled'}
+                className={`group flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
+                  isActive
+                    ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
+                    : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100'
+                } ${collapsed ? 'justify-center' : ''}`}
+              >
+                {collapsed ? (
+                  <span className="h-2 w-2 shrink-0 rounded-full bg-current opacity-40" />
+                ) : (
+                  <>
+                    <span className="min-w-0 flex-1 truncate">{conv.title || 'Untitled'}</span>
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => handleDeleteConversation(e, conv.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') handleDeleteConversation(e as unknown as React.MouseEvent, conv.id);
+                      }}
+                      className="shrink-0 rounded p-0.5 opacity-0 transition-opacity hover:bg-neutral-200 group-hover:opacity-100 dark:hover:bg-neutral-700"
+                      aria-label={`Delete ${conv.title || 'conversation'}`}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5">
+                        <path d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z" />
+                      </svg>
+                    </span>
+                  </>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 

@@ -154,6 +154,29 @@ class OrchestratorService:
         )
         return orch_response, elapsed_ms
 
+    async def fetch_worklog(self) -> dict[str, Any]:
+        """Fetch the user's open work items from the orchestrator.
+
+        Returns a dict with keys: ``items`` (list of work item dicts) and
+        ``status`` (str). Returns an empty items list with a status message
+        if the orchestrator is unavailable.
+        """
+        client = await self._get_client()
+
+        try:
+            response = await client.get("/api/worklog")
+        except (httpx.ConnectError, httpx.TimeoutException, httpx.RequestError) as exc:
+            logger.warning("Failed to fetch worklog from orchestrator: %s", exc)
+            return {"items": [], "status": f"Orchestrator error: {exc}"}
+
+        if response.status_code != 200:
+            return {
+                "items": [],
+                "status": f"Orchestrator returned HTTP {response.status_code}.",
+            }
+
+        return response.json()
+
     async def check_health(self) -> dict[str, Any]:
         """Check whether the orchestrator is reachable and healthy.
 

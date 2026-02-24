@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
 from .database import get_db, reset_db
-from .routers import agents, chat, chat_stream, conversations, health, websocket
+from .routers import agents, chat, chat_stream, conversations, health, websocket, worklog
 from .services.conversation_service import reset_conversation_service
 from .services.orchestrator import get_orchestrator_service
 
@@ -87,4 +87,5 @@ app.include_router(chat.router, prefix="/api")
 app.include_router(chat_stream.router, prefix="/api")
 app.include_router(agents.router, prefix="/api")
 app.include_router(conversations.router, prefix="/api")
+app.include_router(worklog.router, prefix="/api")
 app.include_router(websocket.router)
