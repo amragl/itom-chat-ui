@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.artifact_detector import ArtifactDetector, ArtifactType
+from app.artifact_detector import Artifact, ArtifactDetector, ArtifactType
 
 
 @pytest.fixture
@@ -271,3 +271,80 @@ class TestEdgeCases:
         artifacts = detector.detect(text)
         ids = [a.artifact_id for a in artifacts]
         assert len(ids) == len(set(ids))
+
+
+# ---------------------------------------------------------------------------
+# Serialization for frontend
+# ---------------------------------------------------------------------------
+
+class TestSerializeForFrontend:
+    """Tests for ArtifactDetector.serialize_for_frontend()."""
+
+    def test_field_mapping(self) -> None:
+        """Should map artifact_id -> id, artifact_type -> type, and strip raw_content."""
+        artifact = Artifact(
+            artifact_id="abc-123",
+            artifact_type=ArtifactType.REPORT,
+            title="Test Report",
+            content="report content",
+            raw_content="raw stuff",
+        )
+        result = ArtifactDetector.serialize_for_frontend([artifact])
+        assert len(result) == 1
+        assert result[0]["id"] == "abc-123"
+        assert result[0]["type"] == "report"
+        assert result[0]["title"] == "Test Report"
+        assert result[0]["content"] == "report content"
+        assert "raw_content" not in result[0]
+
+    def test_json_data_maps_to_code(self) -> None:
+        """ArtifactType.JSON_DATA should map to 'code' for the frontend."""
+        artifact = Artifact(
+            artifact_type=ArtifactType.JSON_DATA,
+            title="JSON Data",
+            content={"key": "value"},
+            raw_content='{"key": "value"}',
+        )
+        result = ArtifactDetector.serialize_for_frontend([artifact])
+        assert result[0]["type"] == "code"
+
+    def test_dict_content_serialized_to_string(self) -> None:
+        """Non-string content (dict) should be JSON-serialized."""
+        artifact = Artifact(
+            artifact_type=ArtifactType.TABLE,
+            title="Table",
+            content={"headers": ["A"], "rows": [["1"]]},
+            raw_content="| A |\n|---|\n| 1 |",
+        )
+        result = ArtifactDetector.serialize_for_frontend([artifact])
+        assert isinstance(result[0]["content"], str)
+        assert '"headers"' in result[0]["content"]
+
+    def test_empty_list(self) -> None:
+        """Empty input should return empty output."""
+        result = ArtifactDetector.serialize_for_frontend([])
+        assert result == []
+
+    def test_metadata_preserved(self) -> None:
+        """Metadata should be passed through to the frontend."""
+        artifact = Artifact(
+            artifact_type=ArtifactType.DASHBOARD,
+            title="Dashboard",
+            content="data",
+            raw_content="data",
+            metadata={"source": "dashboard_block"},
+        )
+        result = ArtifactDetector.serialize_for_frontend([artifact])
+        assert result[0]["metadata"] == {"source": "dashboard_block"}
+
+    def test_other_types_unchanged(self) -> None:
+        """Types without a mapping (report, dashboard, table, etc.) stay as-is."""
+        for art_type in (ArtifactType.REPORT, ArtifactType.DASHBOARD, ArtifactType.TABLE, ArtifactType.DOCUMENT, ArtifactType.CHART):
+            artifact = Artifact(
+                artifact_type=art_type,
+                title="Test",
+                content="x",
+                raw_content="x",
+            )
+            result = ArtifactDetector.serialize_for_frontend([artifact])
+            assert result[0]["type"] == art_type.value

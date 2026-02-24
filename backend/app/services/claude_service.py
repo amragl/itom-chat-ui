@@ -25,7 +25,11 @@ from datetime import UTC, datetime
 
 import httpx
 
+from ..artifact_detector import ArtifactDetector
 from ..config import get_settings
+
+# Module-level artifact detector (stateless, safe to reuse)
+_artifact_detector = ArtifactDetector()
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +77,17 @@ Use when humans need to provide data the agent doesn't have.
 2. Agent — The system auto-remediates (for duplicate merges, stale CI retirement, creating missing \
 relationships). Use when the fix can be automated.
 Always specify the correct mode based on the issue type.
+
+ARTIFACT CREATION:
+When a tool returns structured data (health metrics, audit findings, CI tables), use the \
+create_artifact tool to present it as a rich visual artifact instead of flattening it to prose.
+- Use artifact_type "dashboard" for metrics, health scores, agent status overviews.
+- Use artifact_type "report" for audit results, compliance findings with severity levels.
+- Use artifact_type "table" for tabular CI listings, comparison data.
+- Use artifact_type "document" for generated runbooks, KB articles, long-form documentation.
+- ALWAYS include a natural-language summary in your text response alongside the artifact. \
+The artifact supplements your response; it does not replace it.
+- Do NOT embed raw JSON data as code blocks when you are creating an artifact for that data.
 
 STRUCTURED REMEDIATION:
 When creating remediation requests after a CMDB query, you MUST include structured data from the \
@@ -306,6 +321,44 @@ TOOLS = [
     },
 ]
 
+CREATE_ARTIFACT_TOOL = {
+    "name": "create_artifact",
+    "description": (
+        "Create a rich visual artifact for the user. Use this when a tool returns structured "
+        "data that is better presented as a visual component (dashboard, report, table, document) "
+        "rather than as inline text.\n\n"
+        "Content schemas by artifact_type:\n"
+        "- report: {score?, status?, sections?: [{title, content, score?, status?}], "
+        "findings?: [{severity, title?, description, recommendation?}]}\n"
+        "- dashboard: {status?, metrics?: {key: number|string}, "
+        "agents?: [{name, status, response_time_ms?}]}\n"
+        "- table: {headers: string[], rows: string[][]}\n"
+        "- document: {markdown: string}"
+    ),
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "artifact_type": {
+                "type": "string",
+                "enum": ["report", "dashboard", "table", "document"],
+                "description": "The type of visual artifact to create.",
+            },
+            "title": {
+                "type": "string",
+                "description": "Human-readable title for the artifact.",
+            },
+            "content": {
+                "type": "object",
+                "description": "Structured content matching the schema for the chosen artifact_type.",
+            },
+        },
+        "required": ["artifact_type", "title", "content"],
+    },
+}
+
+# ALL_TOOLS = orchestrator tools + local create_artifact tool (passed to Claude API)
+ALL_TOOLS = TOOLS + [CREATE_ARTIFACT_TOOL]
+
 # Maps tool names to orchestrator target_agent IDs
 TOOL_TO_AGENT: dict[str, str] = {
     "query_cmdb": "cmdb-agent",
@@ -388,6 +441,39 @@ def _sse_event(event_type: str, data: dict) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Artifact builder (local tool handler)
+# ---------------------------------------------------------------------------
+
+
+def _build_artifact_from_tool(tool_input: dict) -> dict | None:
+    """Build a frontend-compatible artifact dict from create_artifact tool input.
+
+    Returns None if required fields are missing.
+    """
+    artifact_type = tool_input.get("artifact_type")
+    title = tool_input.get("title")
+    content = tool_input.get("content")
+
+    if not artifact_type or not title or content is None:
+        return None
+
+    # For document type, extract the markdown string directly
+    if artifact_type == "document" and isinstance(content, dict):
+        serialized_content = content.get("markdown", json.dumps(content))
+    else:
+        # JSON-stringify for transport; frontend will parse back
+        serialized_content = json.dumps(content) if not isinstance(content, str) else content
+
+    return {
+        "id": str(uuid.uuid4()),
+        "type": artifact_type,
+        "title": title,
+        "content": serialized_content,
+        "metadata": {"source": "create_artifact_tool"},
+    }
+
+
+# ---------------------------------------------------------------------------
 # Core streaming function
 # ---------------------------------------------------------------------------
 
@@ -465,7 +551,7 @@ async def stream_claude_response(
             temperature=settings.claude_temperature,
             system=SYSTEM_PROMPT,
             messages=messages,
-            tools=TOOLS,
+            tools=ALL_TOOLS,
         ) as stream:
             async for event in stream:
                 if event.type == "content_block_start":
@@ -490,6 +576,8 @@ async def stream_claude_response(
         # Suggested actions collected from orchestrator tool responses
         # (populated when tool calls return actions from the orchestrator)
         collected_actions: list[dict] = []
+        # Artifacts created via create_artifact tool calls
+        collected_artifacts: list[dict] = []
 
         # If Claude wants to call tools, execute them and get a follow-up response
         if tool_use_blocks:
@@ -529,6 +617,18 @@ async def stream_claude_response(
                     )
                     tool_input = {"query": content, "_parse_error": str(e)}
 
+                # Handle create_artifact locally (not an orchestrator tool)
+                if tool_block["name"] == "create_artifact":
+                    artifact = _build_artifact_from_tool(tool_input)
+                    if artifact:
+                        collected_artifacts.append(artifact)
+                    tool_results.append({
+                        "type": "tool_result",
+                        "tool_use_id": tool_block["id"],
+                        "content": "Artifact created successfully.",
+                    })
+                    continue
+
                 result_text, actions = await _call_orchestrator_tool(
                     tool_name=tool_block["name"],
                     tool_input=tool_input,
@@ -548,6 +648,7 @@ async def stream_claude_response(
             # Second Claude call: interpret tool results
             messages_with_results = history.get(conversation_id)
             full_content = ""  # Reset for second response
+            second_round_tool_blocks: list[dict] = []
 
             async with client.messages.stream(
                 model=settings.claude_model,
@@ -555,10 +656,16 @@ async def stream_claude_response(
                 temperature=settings.claude_temperature,
                 system=SYSTEM_PROMPT,
                 messages=messages_with_results,
-                tools=TOOLS,
+                tools=ALL_TOOLS,
             ) as stream:
                 async for event in stream:
-                    if event.type == "content_block_delta":
+                    if event.type == "content_block_start":
+                        if event.content_block.type == "tool_use":
+                            second_round_tool_blocks.append({
+                                "name": event.content_block.name,
+                                "input_json": "",
+                            })
+                    elif event.type == "content_block_delta":
                         if event.delta.type == "text_delta":
                             text = event.delta.text
                             full_content += text
@@ -566,10 +673,41 @@ async def stream_claude_response(
                                 "token": text,
                                 "message_id": message_id,
                             })
+                        elif event.delta.type == "input_json_delta":
+                            if second_round_tool_blocks:
+                                second_round_tool_blocks[-1]["input_json"] += (
+                                    event.delta.partial_json
+                                )
+
+            # Process create_artifact tool calls from the second round
+            for tb in second_round_tool_blocks:
+                if tb["name"] == "create_artifact":
+                    try:
+                        ti = json.loads(tb["input_json"])
+                    except json.JSONDecodeError:
+                        continue
+                    artifact = _build_artifact_from_tool(ti)
+                    if artifact:
+                        collected_artifacts.append(artifact)
+                else:
+                    logger.warning(
+                        "Ignoring unexpected tool_use '%s' in second-round response",
+                        tb["name"],
+                    )
 
         # Store assistant response in history
         if full_content:
             history.add(conversation_id, {"role": "assistant", "content": full_content})
+
+        # Detect artifacts in the final response content (passive fallback)
+        detected_artifacts = _artifact_detector.detect(full_content)
+        serialized_detected = ArtifactDetector.serialize_for_frontend(detected_artifacts)
+
+        # Merge: tool-created artifacts take priority; deduplicate by title
+        tool_titles = {a["title"] for a in collected_artifacts}
+        for detected in serialized_detected:
+            if detected["title"] not in tool_titles:
+                collected_artifacts.append(detected)
 
         # Emit stream_end (include suggested_actions from orchestrator if any)
         end_data: dict = {
@@ -582,6 +720,8 @@ async def stream_claude_response(
         }
         if collected_actions:
             end_data["suggested_actions"] = collected_actions
+        if collected_artifacts:
+            end_data["artifacts"] = collected_artifacts
         yield _sse_event("stream_end", end_data)
 
     except anthropic.AuthenticationError:

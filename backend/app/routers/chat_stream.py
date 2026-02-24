@@ -29,10 +29,14 @@ from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from ..artifact_detector import ArtifactDetector
 from ..config import get_settings
 from ..models.streaming import StreamChatRequest
 from ..services.claude_service import stream_claude_response
 from ..services.streaming import extract_content
+
+# Module-level artifact detector (stateless, safe to reuse)
+_artifact_detector = ArtifactDetector()
 
 logger = logging.getLogger(__name__)
 
@@ -175,8 +179,15 @@ async def clarify_chat(request: ClarifyRequest) -> StreamingResponse:
             if content_text:
                 yield f"data: {json.dumps({'event': 'token', 'data': {'token': content_text, 'message_id': message_id}})}\n\n"
 
+            # Detect artifacts in the response content
+            detected_artifacts = _artifact_detector.detect(content_text or "")
+            serialized_artifacts = ArtifactDetector.serialize_for_frontend(detected_artifacts)
+
             # stream_end
-            yield f"data: {json.dumps({'event': 'stream_end', 'data': {'message_id': message_id, 'full_content': content_text or '', 'agent_id': agent_id, 'agent_name': agent_name, 'conversation_id': request.conversation_id, 'timestamp': datetime.now(UTC).isoformat(), 'suggested_actions': suggested_actions}})}\n\n"
+            end_data: dict = {'message_id': message_id, 'full_content': content_text or '', 'agent_id': agent_id, 'agent_name': agent_name, 'conversation_id': request.conversation_id, 'timestamp': datetime.now(UTC).isoformat(), 'suggested_actions': suggested_actions}
+            if serialized_artifacts:
+                end_data['artifacts'] = serialized_artifacts
+            yield f"data: {json.dumps({'event': 'stream_end', 'data': end_data})}\n\n"
 
         except httpx.ConnectError:
             yield f"data: {json.dumps({'event': 'error', 'data': {'code': 'ORCHESTRATOR_UNREACHABLE', 'message': 'Cannot connect to the ITOM orchestrator.'}})}\n\n"

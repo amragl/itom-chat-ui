@@ -5,6 +5,7 @@ import remarkGfm from 'remark-gfm';
 import type { Components } from 'react-markdown';
 import MermaidDiagram from './MermaidDiagram';
 import SuggestedActions from './SuggestedActions';
+import { ArtifactPanel } from '@/components/artifacts';
 import type { Message } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -235,6 +236,11 @@ export default function ChatBubble({ message, isStreaming = false, onSuggestedAc
             <Markdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{message.content}</Markdown>
           </div>
         </div>
+
+        {/* Artifacts detected in the response */}
+        {!isStreaming && message.artifacts?.length ? (
+          <ArtifactPanel artifacts={message.artifacts} />
+        ) : null}
 
         {/* Suggested follow-up actions */}
         {!isStreaming && onSuggestedAction && message.suggestedActions?.length ? (

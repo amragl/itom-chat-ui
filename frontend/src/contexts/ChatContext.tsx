@@ -9,7 +9,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import type { Agent, ClarificationData, Message, SuggestedAction, WebSocketChatPayload, WebSocketMessage } from '@/types';
+import type { Agent, Artifact, ClarificationData, Message, SuggestedAction, WebSocketChatPayload, WebSocketMessage } from '@/types';
 import { apiClient } from '@/lib/api';
 import { buildHelpText, buildPrompt, parseCommand } from '@/lib/commands';
 import { useStreamingResponse } from '@/hooks/useStreamingResponse';
@@ -193,7 +193,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
   // --- Streaming response callbacks ---
   // Defined before the hook to avoid circular dependency.
   const handleStreamEnd = useCallback(
-    (fullContent: string, messageId: string, agentId: string, suggestedActions?: SuggestedAction[]) => {
+    (fullContent: string, messageId: string, agentId: string, suggestedActions?: SuggestedAction[], artifacts?: Artifact[]) => {
       // When streaming completes, add the final agent message to the
       // messages array. The hook itself transitions to 'complete' status.
       const finalMessage: Message = {
@@ -203,6 +203,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
         timestamp: new Date().toISOString(),
         agentId: agentId || undefined,
         suggestedActions: suggestedActions?.length ? suggestedActions : undefined,
+        artifacts: artifacts?.length ? artifacts : undefined,
       };
       setMessages((prev) => [...prev, finalMessage]);
     },
@@ -362,6 +363,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
           const decoder = new TextDecoder();
           let buffer = '';
           let fullContent = '';
+          let clarifyArtifacts: Artifact[] | undefined;
 
           while (true) {
             const { done, value } = await reader.read();
@@ -378,6 +380,9 @@ export function ChatProvider({ children }: ChatProviderProps) {
                     fullContent += String(parsed.data.token ?? '');
                   } else if (parsed.event === 'stream_end') {
                     fullContent = String(parsed.data.full_content ?? fullContent);
+                    if (Array.isArray(parsed.data.artifacts) && parsed.data.artifacts.length > 0) {
+                      clarifyArtifacts = parsed.data.artifacts as Artifact[];
+                    }
                   }
                 } catch {
                   // ignore parse errors
@@ -392,6 +397,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
               role: 'assistant',
               content: fullContent,
               timestamp: new Date().toISOString(),
+              artifacts: clarifyArtifacts,
             };
             setMessages((prev) => [...prev, assistantMessage]);
           }
