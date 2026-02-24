@@ -92,7 +92,6 @@ itom-chat-ui/
 │   └── pyproject.toml
 ├── docs/
 │   └── api.md                   # API documentation
-├── .agent-forge/                # Agent Forge configuration
 └── CLAUDE.md
 ```
 
@@ -195,4 +194,3 @@ See [docs/api.md](docs/api.md) for detailed API documentation.
 
 This project is part of the **servicenow-suite** program -- a full ITOM ServiceNow automation stack.
 
-A project managed by [Agent Forge](https://github.com/amragl/agent-forge).
