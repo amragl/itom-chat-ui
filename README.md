@@ -135,7 +135,7 @@ The development server starts at [http://localhost:3000](http://localhost:3000).
 ### Running Tests
 
 ```bash
-# Backend tests (139 tests)
+# Backend tests (148 tests)
 cd backend
 CHAT_AUTH_MODE=dev .venv/bin/python -m pytest tests/ -v
 
