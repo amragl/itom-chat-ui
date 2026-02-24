@@ -267,6 +267,21 @@ def search_conversations(conn: sqlite3.Connection, query: str) -> list[dict[str,
     return results
 
 
+def update_conversation_title(
+    conn: sqlite3.Connection,
+    conv_id: str,
+    title: str,
+) -> bool:
+    """Update the title for a conversation. Returns True if it existed."""
+    now = _now_iso()
+    cursor = conn.execute(
+        "UPDATE conversations SET title = ?, updated_at = ? WHERE id = ?",
+        (title, now, conv_id),
+    )
+    conn.commit()
+    return cursor.rowcount > 0
+
+
 def update_conversation_metadata(
     conn: sqlite3.Connection,
     conv_id: str,

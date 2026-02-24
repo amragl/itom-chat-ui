@@ -8,6 +8,7 @@ import type {
   Message,
   SendMessagePayload,
   SendMessageResponse,
+  WorklogResponse,
 } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -20,6 +21,27 @@ import type {
  * Falls back to http://localhost:8000 for local development.
  */
 const API_BASE_URL: string = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+
+// ---------------------------------------------------------------------------
+// Snake-to-camel key mapping
+// ---------------------------------------------------------------------------
+
+/**
+ * Recursively convert all snake_case keys in an object (or array of objects)
+ * to camelCase. Primitives pass through unchanged.
+ */
+function snakeToCamel(obj: unknown): unknown {
+  if (Array.isArray(obj)) return obj.map(snakeToCamel);
+  if (obj !== null && typeof obj === 'object') {
+    return Object.fromEntries(
+      Object.entries(obj as Record<string, unknown>).map(([k, v]) => [
+        k.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase()),
+        snakeToCamel(v),
+      ]),
+    );
+  }
+  return obj;
+}
 
 // ---------------------------------------------------------------------------
 // Error handling
@@ -121,7 +143,7 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
     return undefined as T;
   }
 
-  return (await response.json()) as T;
+  return snakeToCamel(await response.json()) as T;
 }
 
 // ---------------------------------------------------------------------------
@@ -220,8 +242,55 @@ export async function exportConversation(
 }
 
 // ---------------------------------------------------------------------------
+// Conversation title
+// ---------------------------------------------------------------------------
+
+/**
+ * Update the title of an existing conversation.
+ *
+ * Calls PATCH /api/conversations/:id/title.
+ *
+ * @param id - The conversation UUID.
+ * @param title - The new title.
+ */
+export async function updateConversationTitle(
+  id: string,
+  title: string,
+): Promise<{ status: string; conversationId: string }> {
+  return apiFetch(`/api/conversations/${encodeURIComponent(id)}/title`, {
+    method: 'PATCH',
+    body: JSON.stringify({ title }),
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Messages
 // ---------------------------------------------------------------------------
+
+/**
+ * Add a message to an existing conversation.
+ *
+ * Calls POST /api/conversations/:id/messages.
+ *
+ * @param conversationId - The conversation UUID.
+ * @param role - Message role: "user", "assistant", or "system".
+ * @param content - The message text content.
+ * @param agentId - Optional agent ID for assistant messages.
+ */
+export async function addMessage(
+  conversationId: string,
+  role: 'user' | 'assistant' | 'system',
+  content: string,
+  agentId?: string,
+): Promise<Message> {
+  return apiFetch<Message>(
+    `/api/conversations/${encodeURIComponent(conversationId)}/messages`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ role, content, agent_id: agentId }),
+    },
+  );
+}
 
 /**
  * Send a message to an ITOM agent within a conversation.
@@ -271,6 +340,19 @@ export async function listAgents(): Promise<Agent[]> {
  */
 export async function getAgent(id: string): Promise<Agent> {
   return apiFetch<Agent>(`/api/agents/${encodeURIComponent(id)}`);
+}
+
+// ---------------------------------------------------------------------------
+// Worklog
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch the current user's open ServiceNow work items.
+ *
+ * Calls GET /api/worklog.
+ */
+export async function getWorklog(): Promise<WorklogResponse> {
+  return apiFetch<WorklogResponse>('/api/worklog');
 }
 
 // ---------------------------------------------------------------------------
@@ -376,8 +458,10 @@ export const apiClient = {
   deleteConversation,
   searchConversations,
   exportConversation,
+  updateConversationTitle,
 
   // Messages
+  addMessage,
   sendMessage,
   getMessages,
 
@@ -387,4 +471,7 @@ export const apiClient = {
   // Agents
   listAgents,
   getAgent,
+
+  // Worklog
+  getWorklog,
 } as const;

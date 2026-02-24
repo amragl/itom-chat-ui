@@ -115,17 +115,6 @@ export function useChatActions(): ChatActions {
 }
 
 // ---------------------------------------------------------------------------
-// Helper: generate a local conversation ID
-// ---------------------------------------------------------------------------
-
-function generateConversationId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-  return `conv-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-}
-
-// ---------------------------------------------------------------------------
 // Provider component
 // ---------------------------------------------------------------------------
 
@@ -151,9 +140,7 @@ interface ChatProviderProps {
  */
 export function ChatProvider({ children }: ChatProviderProps) {
   // --- Core state ---
-  const [conversationId, setConversationId] = useState<string | null>(
-    () => generateConversationId(),
-  );
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -206,6 +193,12 @@ export function ChatProvider({ children }: ChatProviderProps) {
         artifacts: artifacts?.length ? artifacts : undefined,
       };
       setMessages((prev) => [...prev, finalMessage]);
+
+      // Persist assistant message to backend
+      const convId = conversationIdRef.current;
+      if (convId) {
+        apiClient.addMessage(convId, 'assistant', fullContent, agentId || undefined).catch(console.error);
+      }
     },
     [],
   );
@@ -413,16 +406,13 @@ export function ChatProvider({ children }: ChatProviderProps) {
 
   const sendMessage = useCallback(
     (content: string, agentTarget?: string) => {
-      if (!conversationIdRef.current || isLoading || isStreaming) return;
+      if (isLoading || isStreaming) return;
 
-      const convId = conversationIdRef.current;
-
-      // --- Slash command handling ---
+      // --- Slash command handling (works even without a conversation) ---
       const parsed = parseCommand(content);
       if (parsed) {
         const { command, args } = parsed;
 
-        // Client-side commands: handle locally without hitting the backend
         if (command.agentTarget === null) {
           if (command.name === '/clear') {
             setMessages([]);
@@ -440,6 +430,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
           }
           if (command.name === '/export') {
             const format = args || 'json';
+            const convId = conversationIdRef.current;
             const data = JSON.stringify(
               messages.map((m) => ({
                 role: m.role,
@@ -454,7 +445,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `conversation-${convId}.${format === 'json' ? 'json' : 'txt'}`;
+            a.download = `conversation-${convId ?? 'new'}.${format === 'json' ? 'json' : 'txt'}`;
             a.click();
             URL.revokeObjectURL(url);
             const exportMsg: Message = {
@@ -466,14 +457,26 @@ export function ChatProvider({ children }: ChatProviderProps) {
             setMessages((prev) => [...prev, exportMsg]);
             return;
           }
-          // Unknown client-side command — fall through to normal send
         }
+      }
 
-        // Agent commands: transform to natural language and route to agent
-        if (command.agentTarget) {
-          const prompt = buildPrompt(command, args);
+      // --- Ensure a backend conversation exists ---
+      setIsLoading(true);
+      setError(null);
 
-          // Show the original command as the user message
+      const ensureConversation = async (): Promise<string> => {
+        if (conversationIdRef.current) return conversationIdRef.current;
+        const conv = await apiClient.createConversation({
+          title: content.slice(0, 60) + (content.length > 60 ? '...' : ''),
+        });
+        setConversationId(conv.id);
+        conversationIdRef.current = conv.id;
+        return conv.id;
+      };
+
+      ensureConversation()
+        .then((convId) => {
+          // Add the user message to local state immediately
           const userMessage: Message = {
             id: `user-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
             role: 'user',
@@ -481,48 +484,30 @@ export function ChatProvider({ children }: ChatProviderProps) {
             timestamp: new Date().toISOString(),
           };
           setMessages((prev) => [...prev, userMessage]);
-          setIsLoading(true);
-          setError(null);
 
+          // Persist user message to backend (fire-and-forget)
+          apiClient.addMessage(convId, 'user', content).catch(console.error);
+
+          // Broadcast via WebSocket for cross-tab sync
           wsSendMessage({
             type: 'chat',
             payload: { conversationId: convId, content, role: 'user' },
           });
 
-          // Route to the command's target agent
-          startStreaming(prompt, convId, command.agentTarget);
+          // Determine what to stream
+          if (parsed?.command.agentTarget) {
+            const prompt = buildPrompt(parsed.command, parsed.args);
+            startStreaming(prompt, convId, parsed.command.agentTarget);
+          } else {
+            startStreaming(content, convId, agentTarget);
+          }
+
           setIsLoading(false);
-          return;
-        }
-      }
-
-      // --- Normal message flow (no slash command) ---
-
-      // Add the user message to the local message list immediately
-      const userMessage: Message = {
-        id: `user-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        role: 'user',
-        content,
-        timestamp: new Date().toISOString(),
-      };
-      setMessages((prev) => [...prev, userMessage]);
-      setIsLoading(true);
-      setError(null);
-
-      // Broadcast the user message via WebSocket for cross-tab sync
-      wsSendMessage({
-        type: 'chat',
-        payload: {
-          conversationId: convId,
-          content,
-          role: 'user',
-        },
-      });
-
-      // Start the streaming request — use explicit agent target if provided
-      // (e.g. from suggested action pills that target a specific agent)
-      startStreaming(content, convId, agentTarget);
-      setIsLoading(false);
+        })
+        .catch((err) => {
+          setError(err instanceof Error ? err.message : 'Failed to create conversation');
+          setIsLoading(false);
+        });
     },
     [isLoading, isStreaming, messages, startStreaming, wsSendMessage],
   );
@@ -531,7 +516,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
     abortStreaming();
     resetStreamingState();
     setMessages([]);
-    setConversationId(generateConversationId());
+    setConversationId(null);
     setError(null);
     setIsLoading(false);
   }, [abortStreaming, resetStreamingState]);
@@ -545,7 +530,13 @@ export function ChatProvider({ children }: ChatProviderProps) {
     try {
       const conversation = await apiClient.getConversation(loadConvId);
       setConversationId(conversation.id);
-      setMessages(conversation.messages);
+      // Map backend field names to frontend Message type.
+      // snakeToCamel converts created_at → createdAt, but Message uses "timestamp".
+      const mapped: Message[] = conversation.messages.map((m) => ({
+        ...m,
+        timestamp: m.timestamp ?? (m as unknown as { createdAt?: string }).createdAt ?? new Date().toISOString(),
+      }));
+      setMessages(mapped);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Failed to load conversation';
