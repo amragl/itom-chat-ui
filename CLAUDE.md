@@ -55,7 +55,9 @@ Browser (React 19 + TypeScript + Tailwind 4)
 | `GET /api/conversations/{id}/messages` | Get messages |
 | `POST /api/conversations/{id}/messages` | Add message |
 | `GET /api/conversations/{id}/export` | Export (json/text/markdown) |
+| `PATCH /api/conversations/{id}/title` | Update conversation title |
 | `PUT /api/conversations/{id}/context` | Update metadata |
+| `GET /api/worklog` | User's open ServiceNow work items |
 | `WS /ws/{client_id}` | WebSocket connection |
 
 ## Configuration
