@@ -178,7 +178,7 @@ async def stream_chat_response(
                 return
 
             # Extract the actual content from the nested response
-            agent_response_text, suggested_actions = _extract_content(orch_data)
+            agent_response_text, suggested_actions = extract_content(orch_data)
             actual_agent_id = orch_data.get("agent_id", agent_id)
             actual_agent_name = orch_data.get("agent_name", "Agent")
 
@@ -267,7 +267,7 @@ async def stream_chat_response(
     )
 
 
-def _extract_content(orch_data: dict) -> tuple[str, list[dict[str, str]]]:
+def extract_content(orch_data: dict) -> tuple[str, list[dict[str, str]]]:
     """Extract the displayable text content from an orchestrator response.
 
     Tries several paths to find the agent's actual response text:
