@@ -169,6 +169,12 @@ class OrchestratorService:
             logger.warning("Failed to fetch worklog from orchestrator: %s", exc)
             return {"items": [], "status": f"Orchestrator error: {exc}"}
 
+        if response.status_code == 404:
+            return {
+                "items": [],
+                "status": "Worklog not available — the orchestrator does not support this feature yet.",
+            }
+
         if response.status_code != 200:
             return {
                 "items": [],

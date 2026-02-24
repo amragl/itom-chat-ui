@@ -83,6 +83,25 @@ class TestWorklog:
             assert data["items"][0]["number"] == "INC0012345"
             assert data["items"][1]["number"] == "CHG0067890"
 
+    async def test_worklog_orchestrator_404(self, client: AsyncClient) -> None:
+        """When orchestrator returns 404, show friendly not-available message."""
+        with patch(
+            "app.routers.worklog.get_orchestrator_service",
+        ) as mock_get_orch:
+            mock_orch = AsyncMock()
+            mock_orch.check_health.return_value = {"available": True}
+            mock_orch.fetch_worklog.return_value = {
+                "items": [],
+                "status": "Worklog not available — the orchestrator does not support this feature yet.",
+            }
+            mock_get_orch.return_value = mock_orch
+
+            response = await client.get("/api/worklog")
+            assert response.status_code == 200
+            data = response.json()
+            assert data["items"] == []
+            assert "not available" in data["status"].lower()
+
     async def test_worklog_orchestrator_error_status(self, client: AsyncClient) -> None:
         """When orchestrator returns error status, pass it through."""
         with patch(

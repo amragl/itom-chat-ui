@@ -175,7 +175,7 @@ export default function DashboardPage() {
               </button>
             ))}
           </div>
-        ) : (
+        ) : statusMessage ? null : (
           <EmptyState
             title="No open work items"
             description="You have no open incidents, changes, tasks, or RITMs assigned to you."
