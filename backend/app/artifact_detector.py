@@ -240,6 +240,38 @@ class ArtifactDetector:
 
         return artifacts
 
+    # -- Serialization for frontend -----------------------------------------
+
+    @staticmethod
+    def serialize_for_frontend(artifacts: list[Artifact]) -> list[dict]:
+        """Convert backend Artifact models to frontend-compatible dicts.
+
+        Field mapping:
+        - ``artifact_id`` -> ``id``
+        - ``artifact_type`` -> ``type`` (``json_data`` becomes ``code``)
+        - ``content`` -> ``content`` (serialized to string if not already)
+        - ``title`` -> ``title``
+        - ``metadata`` -> ``metadata``
+        - ``raw_content`` is **stripped** (frontend doesn't need it)
+        """
+        _TYPE_MAP: dict[str, str] = {"json_data": "code"}
+        result: list[dict] = []
+        for art in artifacts:
+            art_type = art.artifact_type.value
+            content = art.content
+            if not isinstance(content, str):
+                import json as _json
+
+                content = _json.dumps(content)
+            result.append({
+                "id": art.artifact_id,
+                "type": _TYPE_MAP.get(art_type, art_type),
+                "title": art.title,
+                "content": content,
+                "metadata": art.metadata,
+            })
+        return result
+
     # -- Report headings (natural language) ---------------------------------
 
     def _detect_report_headings(self, text: str) -> list[Artifact]:

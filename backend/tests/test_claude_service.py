@@ -559,6 +559,173 @@ class TestCallOrchestratorTool:
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# create_artifact tool definition tests
+# ---------------------------------------------------------------------------
+
+
+class TestCreateArtifactTool:
+    """Tests for the create_artifact tool definition and ALL_TOOLS list."""
+
+    def test_create_artifact_not_in_tool_to_agent(self):
+        """create_artifact is local — must NOT be in TOOL_TO_AGENT."""
+        from app.services.claude_service import TOOL_TO_AGENT
+
+        assert "create_artifact" not in TOOL_TO_AGENT
+
+    def test_create_artifact_in_all_tools_but_not_tools(self):
+        """create_artifact is in ALL_TOOLS but not in TOOLS."""
+        from app.services.claude_service import ALL_TOOLS, TOOLS
+
+        tool_names = {t["name"] for t in TOOLS}
+        all_tool_names = {t["name"] for t in ALL_TOOLS}
+
+        assert "create_artifact" not in tool_names
+        assert "create_artifact" in all_tool_names
+
+    def test_all_tools_includes_orchestrator_tools(self):
+        """ALL_TOOLS contains all 6 orchestrator tools plus create_artifact."""
+        from app.services.claude_service import ALL_TOOLS, TOOLS
+
+        assert len(ALL_TOOLS) == len(TOOLS) + 1
+
+    def test_create_artifact_schema_required_fields(self):
+        """create_artifact schema requires artifact_type, title, and content."""
+        from app.services.claude_service import CREATE_ARTIFACT_TOOL
+
+        schema = CREATE_ARTIFACT_TOOL["input_schema"]
+        assert set(schema["required"]) == {"artifact_type", "title", "content"}
+
+    def test_create_artifact_type_enum(self):
+        """artifact_type enum matches the 4 frontend viewer types."""
+        from app.services.claude_service import CREATE_ARTIFACT_TOOL
+
+        props = CREATE_ARTIFACT_TOOL["input_schema"]["properties"]
+        assert set(props["artifact_type"]["enum"]) == {
+            "report", "dashboard", "table", "document",
+        }
+
+
+# ---------------------------------------------------------------------------
+# _build_artifact_from_tool tests
+# ---------------------------------------------------------------------------
+
+
+class TestBuildArtifactFromTool:
+    """Tests for the _build_artifact_from_tool helper function."""
+
+    def test_report_artifact(self):
+        """Report artifact has correct type, title, and JSON-stringified content."""
+        from app.services.claude_service import _build_artifact_from_tool
+
+        result = _build_artifact_from_tool({
+            "artifact_type": "report",
+            "title": "Compliance Report",
+            "content": {
+                "score": 85,
+                "findings": [
+                    {"severity": "high", "description": "Missing patches"},
+                ],
+            },
+        })
+
+        assert result is not None
+        assert result["type"] == "report"
+        assert result["title"] == "Compliance Report"
+        assert result["metadata"]["source"] == "create_artifact_tool"
+        # Content should be JSON-stringified
+        import json
+        parsed = json.loads(result["content"])
+        assert parsed["score"] == 85
+        assert len(parsed["findings"]) == 1
+
+    def test_dashboard_artifact(self):
+        """Dashboard artifact has correct structure."""
+        from app.services.claude_service import _build_artifact_from_tool
+
+        result = _build_artifact_from_tool({
+            "artifact_type": "dashboard",
+            "title": "CMDB Health",
+            "content": {
+                "status": "healthy",
+                "metrics": {"total_cis": 1234, "health_score": 92},
+            },
+        })
+
+        assert result is not None
+        assert result["type"] == "dashboard"
+        assert result["title"] == "CMDB Health"
+        import json
+        parsed = json.loads(result["content"])
+        assert parsed["metrics"]["total_cis"] == 1234
+
+    def test_table_artifact(self):
+        """Table artifact has correct structure."""
+        from app.services.claude_service import _build_artifact_from_tool
+
+        result = _build_artifact_from_tool({
+            "artifact_type": "table",
+            "title": "Server List",
+            "content": {
+                "headers": ["Name", "Status"],
+                "rows": [["srv-01", "Online"], ["srv-02", "Offline"]],
+            },
+        })
+
+        assert result is not None
+        assert result["type"] == "table"
+        import json
+        parsed = json.loads(result["content"])
+        assert parsed["headers"] == ["Name", "Status"]
+        assert len(parsed["rows"]) == 2
+
+    def test_document_artifact_extracts_markdown(self):
+        """Document artifact extracts markdown string from content object."""
+        from app.services.claude_service import _build_artifact_from_tool
+
+        result = _build_artifact_from_tool({
+            "artifact_type": "document",
+            "title": "Runbook",
+            "content": {"markdown": "# Step 1\n\nDo the thing."},
+        })
+
+        assert result is not None
+        assert result["type"] == "document"
+        # markdown should be extracted as a plain string, not JSON-stringified
+        assert result["content"] == "# Step 1\n\nDo the thing."
+
+    def test_missing_fields_returns_none(self):
+        """Returns None when required fields are missing."""
+        from app.services.claude_service import _build_artifact_from_tool
+
+        assert _build_artifact_from_tool({}) is None
+        assert _build_artifact_from_tool({"artifact_type": "report"}) is None
+        assert _build_artifact_from_tool({"artifact_type": "report", "title": "X"}) is None
+
+    def test_each_artifact_gets_unique_id(self):
+        """Each artifact gets a unique UUID."""
+        from app.services.claude_service import _build_artifact_from_tool
+
+        a1 = _build_artifact_from_tool({
+            "artifact_type": "report",
+            "title": "Report A",
+            "content": {"score": 1},
+        })
+        a2 = _build_artifact_from_tool({
+            "artifact_type": "report",
+            "title": "Report B",
+            "content": {"score": 2},
+        })
+
+        assert a1 is not None and a2 is not None
+        assert a1["id"] != a2["id"]
+
+
+# ---------------------------------------------------------------------------
+# Tool hint / tool_args schema + pass-through tests
+# ---------------------------------------------------------------------------
+
+
 class TestToolHintSchema:
     """Tests that tool_hint and tool_args are defined in all tool schemas."""
 

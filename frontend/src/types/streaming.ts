@@ -5,6 +5,8 @@
  * the backend ``POST /api/chat/stream`` endpoint.
  */
 
+import type { Artifact } from './artifact';
+
 /**
  * Discriminator for the kind of SSE event received from the streaming endpoint.
  */
@@ -53,6 +55,7 @@ export interface StreamEndData {
   conversation_id: string;
   timestamp: string;
   suggested_actions?: SuggestedAction[];
+  artifacts?: Artifact[];
 }
 
 /**

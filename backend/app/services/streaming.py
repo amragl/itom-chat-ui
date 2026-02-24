@@ -23,7 +23,11 @@ from datetime import UTC, datetime
 
 import httpx
 
+from ..artifact_detector import ArtifactDetector
 from ..config import get_settings
+
+# Module-level artifact detector (stateless, safe to reuse)
+_artifact_detector = ArtifactDetector()
 
 logger = logging.getLogger(__name__)
 
@@ -243,18 +247,25 @@ async def stream_chat_response(
         yield f"data: {json.dumps(error_event)}\n\n"
         return
 
+    # Detect artifacts in the response content
+    detected_artifacts = _artifact_detector.detect(agent_response_text or "")
+    serialized_artifacts = ArtifactDetector.serialize_for_frontend(detected_artifacts)
+
     # Emit stream_end event with the full assembled content
+    end_data: dict = {
+        "message_id": message_id,
+        "full_content": agent_response_text or "",
+        "agent_id": actual_agent_id,
+        "agent_name": actual_agent_name,
+        "conversation_id": conversation_id,
+        "timestamp": datetime.now(UTC).isoformat(),
+        "suggested_actions": suggested_actions,
+    }
+    if serialized_artifacts:
+        end_data["artifacts"] = serialized_artifacts
     end_event = {
         "event": "stream_end",
-        "data": {
-            "message_id": message_id,
-            "full_content": agent_response_text or "",
-            "agent_id": actual_agent_id,
-            "agent_name": actual_agent_name,
-            "conversation_id": conversation_id,
-            "timestamp": datetime.now(UTC).isoformat(),
-            "suggested_actions": suggested_actions,
-        },
+        "data": end_data,
     }
     yield f"data: {json.dumps(end_event)}\n\n"
 

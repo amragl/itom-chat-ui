@@ -65,15 +65,22 @@ export default function ArtifactPanel({ artifacts }: ArtifactPanelProps) {
 // ---------------------------------------------------------------------------
 
 function ArtifactContent({ artifact }: { artifact: Artifact }) {
+  // Backend stringifies structured content for transport — parse it back
+  // so viewers can use their rich rendering paths.
+  let parsedContent: unknown = artifact.content;
+  if (typeof artifact.content === 'string') {
+    try { parsedContent = JSON.parse(artifact.content); } catch { /* use as-is */ }
+  }
+
   switch (artifact.type) {
     case 'report':
-      return <ReportViewer content={artifact.content} />;
+      return <ReportViewer content={parsedContent as string} />;
     case 'dashboard':
-      return <DashboardRenderer content={artifact.content} />;
+      return <DashboardRenderer content={parsedContent as string} />;
     case 'document':
-      return <DocumentViewer content={artifact.content} />;
+      return <DocumentViewer content={parsedContent as string | Record<string, unknown>} />;
     case 'table':
-      return <TableView content={artifact.content} />;
+      return <TableView content={parsedContent as string | { headers?: string[]; rows?: string[][] }} />;
     case 'code':
       return (
         <pre className="overflow-x-auto rounded-lg bg-neutral-100 p-3 text-xs text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200">
