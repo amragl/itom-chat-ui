@@ -22,12 +22,16 @@ Browser (React 19 + TypeScript + Tailwind 4)
   |
   +-- FastAPI Backend (REST + WebSocket + SSE)
         +-- app/main.py (FastAPI app)
+        +-- app/config.py (Settings, env-based config)
         +-- app/auth.py (SSO / dev auth)
         +-- app/database.py (SQLite persistence)
+        +-- app/artifact_detector.py (content detection)
         +-- app/routers/ (API route handlers)
         +-- app/services/
-        |     +-- streaming.py (SSE streaming)
-        |     +-- claude_service.py (Claude API integration)
+        |     +-- claude_service.py (Claude API + tool-use routing)
+        |     +-- orchestrator.py (HTTP proxy to ITOM orchestrator)
+        |     +-- conversation_service.py (conversation CRUD logic)
+        |     +-- streaming.py (legacy SSE streaming fallback)
         |     +-- connection_manager.py (WebSocket management)
         |
         +-- SQLite (conversation persistence)
@@ -39,9 +43,19 @@ Browser (React 19 + TypeScript + Tailwind 4)
 |----------|---------|
 | `GET /api/health` | Backend health check |
 | `GET /api/agents` | List available agents |
-| `POST /api/chat` | Send chat message |
-| `GET /api/chat/stream` | SSE streaming responses |
+| `GET /api/agents/{agent_id}` | Get single agent details |
+| `POST /api/chat` | Send chat message (proxies to orchestrator) |
+| `POST /api/chat/stream` | SSE streaming responses |
+| `POST /api/chat/clarify` | Resolve clarification tokens |
 | `GET /api/conversations` | List conversations |
+| `POST /api/conversations` | Create conversation |
+| `GET /api/conversations/search?q=` | Search by title/content |
+| `GET /api/conversations/{id}` | Get conversation + messages |
+| `DELETE /api/conversations/{id}` | Delete conversation |
+| `GET /api/conversations/{id}/messages` | Get messages |
+| `POST /api/conversations/{id}/messages` | Add message |
+| `GET /api/conversations/{id}/export` | Export (json/text/markdown) |
+| `PUT /api/conversations/{id}/context` | Update metadata |
 | `WS /ws/{client_id}` | WebSocket connection |
 
 ## Configuration
@@ -54,8 +68,12 @@ Browser (React 19 + TypeScript + Tailwind 4)
 
 ## Key Files
 - `backend/app/main.py` — FastAPI application entry point
-- `backend/app/services/claude_service.py` — Claude API integration
-- `backend/app/services/streaming.py` — SSE streaming service
+- `backend/app/config.py` — Settings singleton (CHAT_* env vars)
+- `backend/app/services/claude_service.py` — Claude API + tool-use routing (primary)
+- `backend/app/services/orchestrator.py` — HTTP proxy to ITOM orchestrator
+- `backend/app/services/streaming.py` — Legacy SSE streaming (fallback)
+- `backend/app/services/conversation_service.py` — Conversation business logic
+- `backend/tests/conftest.py` — Test setup (MUST set env BEFORE import)
 - `frontend/src/components/chat/` — Chat UI components
 - `frontend/src/app/` — Next.js pages
 

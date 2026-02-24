@@ -6,7 +6,7 @@ Validates that:
 - stream_chat_response emits stream_end with empty content after clarification
 - POST /api/chat/clarify endpoint exists and streams a response
 - clarify endpoint handles orchestrator errors gracefully
-- _extract_content is not called when response_type=clarification
+- extract_content is not called when response_type=clarification
 """
 
 from __future__ import annotations

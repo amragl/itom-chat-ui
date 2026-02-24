@@ -19,17 +19,20 @@ clarification token and streams the resolved response.
 
 from __future__ import annotations
 
+import json
 import logging
-from typing import Any
+import uuid
+from datetime import UTC, datetime
 
 import httpx
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from ..config import get_settings
 from ..models.streaming import StreamChatRequest
 from ..services.claude_service import stream_claude_response
+from ..services.streaming import extract_content
 
 logger = logging.getLogger(__name__)
 
@@ -149,7 +152,6 @@ async def clarify_chat(request: ClarifyRequest) -> StreamingResponse:
                 )
 
             if response.status_code != 200:
-                import json as _json
                 error_event = {
                     "event": "error",
                     "data": {
@@ -157,13 +159,8 @@ async def clarify_chat(request: ClarifyRequest) -> StreamingResponse:
                         "message": f"Orchestrator returned HTTP {response.status_code}",
                     },
                 }
-                yield f"data: {_json.dumps(error_event)}\n\n"
+                yield f"data: {json.dumps(error_event)}\n\n"
                 return
-
-            # Re-stream as a regular chat response
-            import json as _json
-            from datetime import UTC, datetime
-            import uuid
 
             orch_data = response.json()
             message_id = str(uuid.uuid4())
@@ -171,24 +168,21 @@ async def clarify_chat(request: ClarifyRequest) -> StreamingResponse:
             agent_name = orch_data.get("agent_name", "Agent")
 
             # stream_start
-            yield f"data: {_json.dumps({'event': 'stream_start', 'data': {'message_id': message_id, 'agent_id': agent_id, 'conversation_id': request.conversation_id, 'timestamp': datetime.now(UTC).isoformat()}})}\n\n"
+            yield f"data: {json.dumps({'event': 'stream_start', 'data': {'message_id': message_id, 'agent_id': agent_id, 'conversation_id': request.conversation_id, 'timestamp': datetime.now(UTC).isoformat()}})}\n\n"
 
             # Extract content and emit as single token
-            from ..services.streaming import _extract_content
-            content_text, suggested_actions = _extract_content(orch_data)
+            content_text, suggested_actions = extract_content(orch_data)
             if content_text:
-                yield f"data: {_json.dumps({'event': 'token', 'data': {'token': content_text, 'message_id': message_id}})}\n\n"
+                yield f"data: {json.dumps({'event': 'token', 'data': {'token': content_text, 'message_id': message_id}})}\n\n"
 
             # stream_end
-            yield f"data: {_json.dumps({'event': 'stream_end', 'data': {'message_id': message_id, 'full_content': content_text or '', 'agent_id': agent_id, 'agent_name': agent_name, 'conversation_id': request.conversation_id, 'timestamp': datetime.now(UTC).isoformat(), 'suggested_actions': suggested_actions}})}\n\n"
+            yield f"data: {json.dumps({'event': 'stream_end', 'data': {'message_id': message_id, 'full_content': content_text or '', 'agent_id': agent_id, 'agent_name': agent_name, 'conversation_id': request.conversation_id, 'timestamp': datetime.now(UTC).isoformat(), 'suggested_actions': suggested_actions}})}\n\n"
 
         except httpx.ConnectError:
-            import json as _json
-            yield f"data: {_json.dumps({'event': 'error', 'data': {'code': 'ORCHESTRATOR_UNREACHABLE', 'message': 'Cannot connect to the ITOM orchestrator.'}})}\n\n"
+            yield f"data: {json.dumps({'event': 'error', 'data': {'code': 'ORCHESTRATOR_UNREACHABLE', 'message': 'Cannot connect to the ITOM orchestrator.'}})}\n\n"
         except Exception:
-            import json as _json
             logger.exception("Unexpected error during clarification for %s", request.conversation_id)
-            yield f"data: {_json.dumps({'event': 'error', 'data': {'code': 'CLARIFY_INTERNAL_ERROR', 'message': 'An unexpected error occurred.'}})}\n\n"
+            yield f"data: {json.dumps({'event': 'error', 'data': {'code': 'CLARIFY_INTERNAL_ERROR', 'message': 'An unexpected error occurred.'}})}\n\n"
 
     return StreamingResponse(
         content=_forward_clarification_as_stream(),
