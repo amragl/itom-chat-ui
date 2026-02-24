@@ -98,8 +98,24 @@ Stream an agent's response via Server-Sent Events.
 **SSE Events:**
 - `stream_start`: `{message_id, agent_id, conversation_id, timestamp}`
 - `token`: `{token, message_id}`
-- `stream_end`: `{message_id, full_content, agent_id, conversation_id, timestamp}`
+- `clarification`: `{question, options, pending_message_token, message_id}`
+- `stream_end`: `{message_id, full_content, agent_id, conversation_id, timestamp, suggested_actions}`
 - `error`: `{code, message}`
+
+### POST /api/chat/clarify
+
+Resolve a pending clarification and stream the response.
+
+**Request Body:**
+```json
+{
+  "pending_message_token": "tok-abc123",
+  "clarification_answer": "Query CMDB",
+  "conversation_id": "uuid"
+}
+```
+
+**Response:** SSE stream (same event format as `/api/chat/stream`).
 
 ## Conversations
 
