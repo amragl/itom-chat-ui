@@ -282,12 +282,13 @@ export async function addMessage(
   role: 'user' | 'assistant' | 'system',
   content: string,
   agentId?: string,
+  metadata?: Record<string, unknown>,
 ): Promise<Message> {
   return apiFetch<Message>(
     `/api/conversations/${encodeURIComponent(conversationId)}/messages`,
     {
       method: 'POST',
-      body: JSON.stringify({ role, content, agent_id: agentId }),
+      body: JSON.stringify({ role, content, agent_id: agentId, metadata }),
     },
   );
 }
