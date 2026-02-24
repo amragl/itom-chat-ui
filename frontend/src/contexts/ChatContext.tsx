@@ -194,10 +194,11 @@ export function ChatProvider({ children }: ChatProviderProps) {
       };
       setMessages((prev) => [...prev, finalMessage]);
 
-      // Persist assistant message to backend
+      // Persist assistant message to backend (include artifacts in metadata)
       const convId = conversationIdRef.current;
       if (convId) {
-        apiClient.addMessage(convId, 'assistant', fullContent, agentId || undefined).catch(console.error);
+        const meta = artifacts?.length ? { artifacts } : undefined;
+        apiClient.addMessage(convId, 'assistant', fullContent, agentId || undefined, meta).catch(console.error);
       }
     },
     [],
@@ -532,10 +533,16 @@ export function ChatProvider({ children }: ChatProviderProps) {
       setConversationId(conversation.id);
       // Map backend field names to frontend Message type.
       // snakeToCamel converts created_at → createdAt, but Message uses "timestamp".
-      const mapped: Message[] = conversation.messages.map((m) => ({
-        ...m,
-        timestamp: m.timestamp ?? (m as unknown as { createdAt?: string }).createdAt ?? new Date().toISOString(),
-      }));
+      // Artifacts are stored in metadata.artifacts by the backend — lift them to top level.
+      const mapped: Message[] = conversation.messages.map((m) => {
+        const raw = m as unknown as Record<string, unknown>;
+        const meta = raw.metadata as Record<string, unknown> | undefined;
+        return {
+          ...m,
+          timestamp: m.timestamp ?? (raw.createdAt as string) ?? new Date().toISOString(),
+          artifacts: m.artifacts ?? (meta?.artifacts as Artifact[] | undefined),
+        };
+      });
       setMessages(mapped);
     } catch (err) {
       const message =
