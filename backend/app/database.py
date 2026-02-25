@@ -165,6 +165,14 @@ def create_conversation(
     }
 
 
+def conversation_exists(conn: sqlite3.Connection, conv_id: str) -> bool:
+    """Check whether a conversation exists without loading messages."""
+    row = conn.execute(
+        "SELECT 1 FROM conversations WHERE id = ?", (conv_id,)
+    ).fetchone()
+    return row is not None
+
+
 def get_conversation(conn: sqlite3.Connection, conv_id: str) -> dict[str, Any] | None:
     """Fetch a single conversation by ID, including its messages.
 
@@ -239,7 +247,8 @@ def search_conversations(conn: sqlite3.Connection, query: str) -> list[dict[str,
     Returns conversations whose title or any message content matches the
     query using a case-insensitive LIKE search.
     """
-    like_pattern = f"%{query}%"
+    escaped = query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    like_pattern = f"%{escaped}%"
     rows = conn.execute(
         """
         SELECT DISTINCT
@@ -251,7 +260,7 @@ def search_conversations(conn: sqlite3.Connection, query: str) -> list[dict[str,
             (SELECT COUNT(*) FROM messages WHERE conversation_id = c.id) AS message_count
         FROM conversations c
         LEFT JOIN messages m ON m.conversation_id = c.id
-        WHERE c.title LIKE ? OR m.content LIKE ?
+        WHERE c.title LIKE ? ESCAPE '\\' OR m.content LIKE ? ESCAPE '\\'
         ORDER BY c.updated_at DESC
         """,
         (like_pattern, like_pattern),

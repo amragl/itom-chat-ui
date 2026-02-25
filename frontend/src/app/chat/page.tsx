@@ -14,12 +14,17 @@ function ChatView() {
   const { sendMessage, clearError, respondToClarification, loadConversation } = useChatActions();
   const searchParams = useSearchParams();
 
-  // Load conversation from URL query param on mount
+  // Load conversation or pre-fill message from URL query params on mount
   useEffect(() => {
     const id = searchParams.get('id');
+    const prefill = searchParams.get('prefill');
     if (id) {
       loadConversation(id);
+    } else if (prefill) {
+      sendMessage(prefill);
     }
+    // Only run on mount — sendMessage identity changes on every render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, loadConversation]);
 
   return (

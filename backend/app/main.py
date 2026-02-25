@@ -1,3 +1,4 @@
+import importlib.metadata
 import logging
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
@@ -57,6 +58,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.info("Shutting down %s", settings.app_name)
 
 
+def _get_version() -> str:
+    """Read the package version from installed metadata, with fallback."""
+    try:
+        return importlib.metadata.version("itom-chat-backend")
+    except importlib.metadata.PackageNotFoundError:
+        return "0.0.0-dev"
+
+
 app = FastAPI(
     title="ITOM Chat Backend",
     description=(
@@ -64,7 +73,7 @@ app = FastAPI(
         "real-time WebSocket communication, agent routing, and streaming chat "
         "with ServiceNow ITOM agents."
     ),
-    version="0.1.0",
+    version=_get_version(),
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",

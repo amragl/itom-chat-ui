@@ -158,6 +158,10 @@ export function ChatProvider({ children }: ChatProviderProps) {
   // Ref for the clarification AbortController so we can clean up on unmount
   const clarifyAbortRef = useRef<AbortController | null>(null);
 
+  // Ref to access messages without adding them to useCallback deps
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
+
   // --- Abort clarification on unmount ---
   useEffect(() => {
     return () => {
@@ -476,7 +480,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
             } else {
               // JSON export: serialize local messages
               const data = JSON.stringify(
-                messages.map((m) => ({
+                messagesRef.current.map((m) => ({
                   role: m.role,
                   content: m.content,
                   timestamp: m.timestamp,
@@ -555,7 +559,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
           setIsLoading(false);
         });
     },
-    [isLoading, isStreaming, messages, startStreaming, wsSendMessage],
+    [isLoading, isStreaming, startStreaming, wsSendMessage],
   );
 
   const startNewConversation = useCallback(() => {

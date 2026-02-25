@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { ConversationSummary } from '@/types';
@@ -94,6 +94,7 @@ interface SidebarProps {
 export default function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
 
   const fetchConversations = useCallback(async () => {
@@ -130,11 +131,8 @@ export default function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
     [],
   );
 
-  // Extract active conversation ID from the URL query string
-  const activeConvId =
-    typeof window !== 'undefined'
-      ? new URLSearchParams(window.location.search).get('id')
-      : null;
+  // Reactive: re-renders when URL query changes via router.push
+  const activeConvId = searchParams.get('id');
 
   return (
     <aside

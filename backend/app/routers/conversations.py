@@ -302,9 +302,8 @@ async def add_message(
     """Add a message to a conversation."""
     service = get_conversation_service(settings)
 
-    # Verify the conversation exists
-    conv = service.get_conversation_with_messages(conv_id)
-    if conv is None:
+    # Verify the conversation exists (lightweight check, no message loading)
+    if not service.conversation_exists(conv_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Conversation '{conv_id}' not found.",
