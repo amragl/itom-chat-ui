@@ -9,12 +9,12 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime
 from typing import Any
 
 from ..artifact_detector import ArtifactDetector
 from ..config import Settings
 from ..database import (
+    conversation_exists,
     create_conversation,
     delete_conversation,
     get_conversation,
@@ -79,6 +79,10 @@ class ConversationService:
             conv["messages"] = [msg]
 
         return conv
+
+    def conversation_exists(self, conv_id: str) -> bool:
+        """Check whether a conversation exists without loading messages."""
+        return conversation_exists(self._conn, conv_id)
 
     def get_conversation_with_messages(self, conv_id: str) -> dict[str, Any] | None:
         """Fetch a conversation with its full message history."""

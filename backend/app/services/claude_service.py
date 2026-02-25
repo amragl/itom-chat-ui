@@ -23,6 +23,7 @@ from collections import OrderedDict
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
 
+import anthropic
 import httpx
 
 from ..artifact_detector import ArtifactDetector
@@ -30,6 +31,19 @@ from ..config import get_settings
 
 # Module-level artifact detector (stateless, safe to reuse)
 _artifact_detector = ArtifactDetector()
+
+# Cached Anthropic async client — reuses the internal httpx connection pool
+_anthropic_client: anthropic.AsyncAnthropic | None = None
+_anthropic_client_key: str | None = None
+
+
+def _get_anthropic_client(api_key: str) -> anthropic.AsyncAnthropic:
+    """Return a cached AsyncAnthropic client, recreating only if the key changes."""
+    global _anthropic_client, _anthropic_client_key  # noqa: PLW0603
+    if _anthropic_client is None or _anthropic_client_key != api_key:
+        _anthropic_client = anthropic.AsyncAnthropic(api_key=api_key)
+        _anthropic_client_key = api_key
+    return _anthropic_client
 
 logger = logging.getLogger(__name__)
 
@@ -618,9 +632,7 @@ async def stream_claude_response(
     full_content = ""
 
     try:
-        import anthropic
-
-        client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
+        client = _get_anthropic_client(settings.anthropic_api_key)
         messages = history.get(conversation_id)
 
         tool_use_blocks: list[dict] = []

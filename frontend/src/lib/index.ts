@@ -7,15 +7,4 @@
  */
 
 export { apiClient, ApiError } from './api';
-export {
-  getHealth,
-  listConversations,
-  getConversation,
-  createConversation,
-  deleteConversation,
-  sendMessage,
-  getMessages,
-  listAgents,
-  getAgent,
-} from './api';
 export { auth, signIn, signOut, authConfig } from './auth';
