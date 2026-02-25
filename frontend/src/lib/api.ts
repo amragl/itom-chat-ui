@@ -304,7 +304,11 @@ export async function addMessage(
 export async function sendMessage(payload: SendMessagePayload): Promise<SendMessageResponse> {
   return apiFetch<SendMessageResponse>('/api/chat', {
     method: 'POST',
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      content: payload.content,
+      conversation_id: payload.conversationId,
+      agent_target: payload.agentTarget ?? null,
+    }),
   });
 }
 

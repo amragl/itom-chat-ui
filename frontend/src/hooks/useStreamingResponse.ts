@@ -244,13 +244,21 @@ export function useStreamingResponse(
           // Inactivity timeout: if no data received for 90 seconds,
           // assume the connection dropped and break out of the loop.
           const INACTIVITY_TIMEOUT_MS = 90_000;
+          let timedOut = false;
 
           while (true) {
-            const timeoutPromise = new Promise<{ done: true; value: undefined }>(
-              (resolve) => setTimeout(() => resolve({ done: true, value: undefined }), INACTIVITY_TIMEOUT_MS),
-            );
+            let timer: ReturnType<typeof setTimeout> | undefined;
+            const timeoutPromise = new Promise<{ done: true; value: undefined }>((resolve) => {
+              timer = setTimeout(() => { timedOut = true; resolve({ done: true, value: undefined }); }, INACTIVITY_TIMEOUT_MS);
+            });
             const { done, value } = await Promise.race([reader.read(), timeoutPromise]);
-            if (done) break;
+            clearTimeout(timer);
+            if (done) {
+              if (timedOut) {
+                reader.cancel().catch(() => {});
+              }
+              break;
+            }
 
             buffer += decoder.decode(value, { stream: true });
 

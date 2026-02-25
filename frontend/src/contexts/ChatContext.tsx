@@ -155,6 +155,16 @@ export function ChatProvider({ children }: ChatProviderProps) {
   const conversationIdRef = useRef(conversationId);
   conversationIdRef.current = conversationId;
 
+  // Ref for the clarification AbortController so we can clean up on unmount
+  const clarifyAbortRef = useRef<AbortController | null>(null);
+
+  // --- Abort clarification on unmount ---
+  useEffect(() => {
+    return () => {
+      clarifyAbortRef.current?.abort();
+    };
+  }, []);
+
   // --- Fetch agents on mount ---
   useEffect(() => {
     let cancelled = false;
@@ -277,15 +287,14 @@ export function ChatProvider({ children }: ChatProviderProps) {
             payload.conversationId === conversationIdRef.current &&
             payload.role === 'assistant'
           ) {
-            // Check if we already have this message (dedup by content and timing)
+            // Check if we already have this message (dedup by content and recency)
             setMessages((prev) => {
+              const now = Date.now();
               const isDuplicate = prev.some(
                 (m) =>
                   m.content === payload.content &&
                   m.role === payload.role &&
-                  Math.abs(
-                    new Date(m.timestamp).getTime() - Date.now(),
-                  ) < 5000,
+                  now - new Date(m.timestamp).getTime() < 5000,
               );
               if (isDuplicate) return prev;
 
@@ -331,7 +340,11 @@ export function ChatProvider({ children }: ChatProviderProps) {
         typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL
           ? process.env.NEXT_PUBLIC_API_URL
           : 'http://localhost:8001';
+
+      // Abort any in-flight clarification before starting a new one
+      clarifyAbortRef.current?.abort();
       const controller = new AbortController();
+      clarifyAbortRef.current = controller;
 
       getStreamAuthHeaders()
         .then((headers) =>
@@ -352,15 +365,13 @@ export function ChatProvider({ children }: ChatProviderProps) {
             setIsLoading(false);
             return;
           }
-          // Re-use the same startStreaming mechanism by reading the stream manually.
-          // For simplicity: hand off to startStreaming with a sentinel content.
-          // Actually, startStreaming goes to /api/chat/stream not /api/chat/clarify,
-          // so we parse the SSE here directly.
+          // Parse SSE directly (startStreaming targets /api/chat/stream, not /api/chat/clarify)
           const reader = response.body.getReader();
           const decoder = new TextDecoder();
           let buffer = '';
           let fullContent = '';
           let clarifyArtifacts: Artifact[] | undefined;
+          let clarifySuggestedActions: SuggestedAction[] | undefined;
 
           while (true) {
             const { done, value } = await reader.read();
@@ -380,6 +391,9 @@ export function ChatProvider({ children }: ChatProviderProps) {
                     if (Array.isArray(parsed.data.artifacts) && parsed.data.artifacts.length > 0) {
                       clarifyArtifacts = parsed.data.artifacts as Artifact[];
                     }
+                    if (Array.isArray(parsed.data.suggested_actions) && parsed.data.suggested_actions.length > 0) {
+                      clarifySuggestedActions = parsed.data.suggested_actions as SuggestedAction[];
+                    }
                   }
                 } catch {
                   // ignore parse errors
@@ -395,12 +409,21 @@ export function ChatProvider({ children }: ChatProviderProps) {
               content: fullContent,
               timestamp: new Date().toISOString(),
               artifacts: clarifyArtifacts,
+              suggestedActions: clarifySuggestedActions,
             };
             setMessages((prev) => [...prev, assistantMessage]);
+
+            // Persist clarification response to backend
+            if (convId) {
+              const meta = clarifyArtifacts?.length ? { artifacts: clarifyArtifacts } : undefined;
+              apiClient.addMessage(convId, 'assistant', fullContent, undefined, meta).catch(console.error);
+            }
           }
           setIsLoading(false);
         })
-        .catch(() => {
+        .catch((err: unknown) => {
+          // AbortError is expected on unmount or new clarification
+          if (err instanceof DOMException && err.name === 'AbortError') return;
           setError('Network error during clarification.');
           setIsLoading(false);
         });
@@ -433,25 +456,44 @@ export function ChatProvider({ children }: ChatProviderProps) {
             return;
           }
           if (command.name === '/export') {
-            const format = args || 'json';
+            const format = (args || 'json') as 'json' | 'text' | 'markdown';
             const convId = conversationIdRef.current;
-            const data = JSON.stringify(
-              messages.map((m) => ({
-                role: m.role,
-                content: m.content,
-                timestamp: m.timestamp,
-                agentId: m.agentId,
-              })),
-              null,
-              2,
-            );
-            const blob = new Blob([data], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `conversation-${convId ?? 'new'}.${format === 'json' ? 'json' : 'txt'}`;
-            a.click();
-            URL.revokeObjectURL(url);
+
+            // Use the backend export endpoint when a conversation exists
+            if (convId && (format === 'text' || format === 'markdown')) {
+              apiClient.exportConversation(convId, format).then((result) => {
+                const ext = format === 'markdown' ? 'md' : 'txt';
+                const blob = new Blob([result.content], { type: result.contentType });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `conversation-${convId}.${ext}`;
+                a.click();
+                URL.revokeObjectURL(url);
+              }).catch(() => {
+                setError('Failed to export conversation.');
+              });
+            } else {
+              // JSON export: serialize local messages
+              const data = JSON.stringify(
+                messages.map((m) => ({
+                  role: m.role,
+                  content: m.content,
+                  timestamp: m.timestamp,
+                  agentId: m.agentId,
+                })),
+                null,
+                2,
+              );
+              const blob = new Blob([data], { type: 'application/json' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `conversation-${convId ?? 'new'}.json`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }
+
             const exportMsg: Message = {
               id: `export-${Date.now()}`,
               role: 'assistant',

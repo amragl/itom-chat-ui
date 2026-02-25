@@ -723,7 +723,7 @@ async def stream_claude_response(
                     conversation_id=conversation_id,
                 )
                 if actions:
-                    collected_actions = actions
+                    collected_actions.extend(actions)
                 tool_results.append({
                     "type": "tool_result",
                     "tool_use_id": tool_block["id"],
