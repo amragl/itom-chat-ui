@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Artifact, ClarificationData, StreamErrorData, StreamingState, StreamingStatus, SuggestedAction } from '@/types';
+import { getStreamAuthHeaders } from '@/lib/api';
 
 /**
  * Options for configuring the streaming response hook.
@@ -62,7 +63,7 @@ function resolveApiBaseUrl(override?: string): string {
   if (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL;
   }
-  return 'http://localhost:8000';
+  return 'http://localhost:8001';
 }
 
 /**
@@ -187,15 +188,15 @@ export function useStreamingResponse(
         agent_target: agentTarget ?? null,
       });
 
-      fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'text/event-stream',
-        },
-        body,
-        signal: controller.signal,
-      })
+      getStreamAuthHeaders()
+        .then((headers) =>
+          fetch(url, {
+            method: 'POST',
+            headers,
+            body,
+            signal: controller.signal,
+          }),
+        )
         .then(async (response) => {
           if (!response.ok) {
             let errorMessage = `Server returned HTTP ${response.status}`;

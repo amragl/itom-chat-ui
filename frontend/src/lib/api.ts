@@ -18,9 +18,9 @@ import type {
 /**
  * Base URL for the backend API.
  * Reads from the NEXT_PUBLIC_API_URL environment variable at build time.
- * Falls back to http://localhost:8000 for local development.
+ * Falls back to http://localhost:8001 for local development.
  */
-const API_BASE_URL: string = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+const API_BASE_URL: string = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8001';
 
 // ---------------------------------------------------------------------------
 // Snake-to-camel key mapping
@@ -235,7 +235,7 @@ export async function searchConversations(query: string): Promise<ConversationSu
 export async function exportConversation(
   id: string,
   format: 'json' | 'text' | 'markdown' = 'json',
-): Promise<{ conversation_id: string; format: string; content_type: string; content: string }> {
+): Promise<{ conversationId: string; format: string; contentType: string; content: string }> {
   return apiFetch(
     `/api/conversations/${encodeURIComponent(id)}/export?format=${format}`,
   );
@@ -354,6 +354,36 @@ export async function getAgent(id: string): Promise<Agent> {
  */
 export async function getWorklog(): Promise<WorklogResponse> {
   return apiFetch<WorklogResponse>('/api/worklog');
+}
+
+// ---------------------------------------------------------------------------
+// Streaming auth helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Build headers for SSE streaming requests that bypass apiFetch.
+ *
+ * Streaming endpoints (POST /api/chat/stream, POST /api/chat/clarify) use raw
+ * fetch() instead of apiFetch because they return text/event-stream, not JSON.
+ * This helper ensures they still attach the Bearer token in SSO mode.
+ */
+export async function getStreamAuthHeaders(): Promise<Record<string, string>> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Accept: 'text/event-stream',
+  };
+  const authMode = process.env.NEXT_PUBLIC_AUTH_MODE ?? 'sso';
+  if (authMode !== 'dev') {
+    try {
+      const session = await getSession();
+      if (session?.accessToken) {
+        headers['Authorization'] = `Bearer ${session.accessToken}`;
+      }
+    } catch {
+      // Session fetch failed; proceed without token (backend will return 401)
+    }
+  }
+  return headers;
 }
 
 // ---------------------------------------------------------------------------

@@ -10,7 +10,7 @@ import {
   useState,
 } from 'react';
 import type { Agent, Artifact, ClarificationData, Message, SuggestedAction, WebSocketChatPayload, WebSocketMessage } from '@/types';
-import { apiClient } from '@/lib/api';
+import { apiClient, getStreamAuthHeaders } from '@/lib/api';
 import { buildHelpText, buildPrompt, parseCommand } from '@/lib/commands';
 import { useStreamingResponse } from '@/hooks/useStreamingResponse';
 import { useWebSocket } from '@/hooks/useWebSocket';
@@ -330,19 +330,22 @@ export function ChatProvider({ children }: ChatProviderProps) {
       const baseUrl =
         typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL
           ? process.env.NEXT_PUBLIC_API_URL
-          : 'http://localhost:8000';
+          : 'http://localhost:8001';
       const controller = new AbortController();
 
-      fetch(`${baseUrl}/api/chat/clarify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
-        body: JSON.stringify({
-          pending_message_token: clarification.pendingToken,
-          clarification_answer: answer,
-          conversation_id: convId,
-        }),
-        signal: controller.signal,
-      })
+      getStreamAuthHeaders()
+        .then((headers) =>
+          fetch(`${baseUrl}/api/chat/clarify`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              pending_message_token: clarification.pendingToken,
+              clarification_answer: answer,
+              conversation_id: convId,
+            }),
+            signal: controller.signal,
+          }),
+        )
         .then(async (response) => {
           if (!response.ok || !response.body) {
             setError('Failed to resolve clarification.');
