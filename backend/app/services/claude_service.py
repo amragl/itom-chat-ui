@@ -119,7 +119,15 @@ user's intent clearly maps to a specific tool.
 "days": 60, "limit": 10}).
 - If unsure which tool to use, omit tool_hint — the orchestrator will use keyword matching.
 - Common ci_type values: server, linux_server, win_server, database, application, network_gear, \
-storage."""
+storage.
+
+FOLLOW-UP SUGGESTIONS (CRITICAL — call with EVERY response):
+After every response, you MUST call suggest_follow_ups with exactly 3 suggestions:
+1. A follow-up that digs deeper into the current result (e.g., "Show dependency tree for srv-01").
+2. A follow-up that takes the next logical action (e.g., "Create remediation request for stale CIs").
+3. An alternative useful action unrelated to the current topic (e.g., "Check CMDB health metrics").
+Keep labels short (3-6 words). Messages should be specific and actionable.
+Call suggest_follow_ups in the SAME response as create_artifact — do not make a separate response."""
 
 # ---------------------------------------------------------------------------
 # Tool definitions (6 ITOM agent tools)
@@ -347,8 +355,45 @@ CREATE_ARTIFACT_TOOL = {
     },
 }
 
-# ALL_TOOLS = orchestrator tools + local create_artifact tool (passed to Claude API)
-ALL_TOOLS = TOOLS + [CREATE_ARTIFACT_TOOL]
+SUGGEST_FOLLOW_UPS_TOOL = {
+    "name": "suggest_follow_ups",
+    "description": (
+        "Suggest 3 follow-up actions for the user. Call this tool with every response. "
+        "Provide exactly 3 suggestions: 2 follow-ups related to the current response, "
+        "and 1 alternative useful action unrelated to the current topic."
+    ),
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "follow_ups": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "label": {
+                            "type": "string",
+                            "description": "Short pill label (3-6 words).",
+                        },
+                        "message": {
+                            "type": "string",
+                            "description": "Full chat message to send when clicked.",
+                        },
+                    },
+                    "required": ["label", "message"],
+                },
+                "minItems": 3,
+                "maxItems": 3,
+            },
+        },
+        "required": ["follow_ups"],
+    },
+}
+
+# Tools handled locally (not routed to orchestrator)
+LOCAL_TOOLS = {"create_artifact", "suggest_follow_ups"}
+
+# ALL_TOOLS = orchestrator tools + local tools (passed to Claude API)
+ALL_TOOLS = TOOLS + [CREATE_ARTIFACT_TOOL, SUGGEST_FOLLOW_UPS_TOOL]
 
 # Maps tool names to orchestrator target_agent IDs
 TOOL_TO_AGENT: dict[str, str] = {
@@ -464,6 +509,47 @@ def _build_artifact_from_tool(tool_input: dict) -> dict | None:
     }
 
 
+def _extract_follow_ups(tool_input: dict) -> list[dict]:
+    """Extract follow-up suggestions from suggest_follow_ups tool input.
+
+    Returns a list of {label, message} dicts, or [] on invalid input.
+    """
+    follow_ups = tool_input.get("follow_ups")
+    if not isinstance(follow_ups, list):
+        return []
+    return [
+        {"label": f["label"], "message": f["message"]}
+        for f in follow_ups[:3]
+        if isinstance(f, dict) and "label" in f and "message" in f
+    ]
+
+
+# ---------------------------------------------------------------------------
+# Dynamic system prompt
+# ---------------------------------------------------------------------------
+
+
+def _build_system_prompt() -> str:
+    """Build the system prompt, optionally injecting ServiceNow instance URL."""
+    settings = get_settings()
+    sn_url = (
+        settings.servicenow_instance.rstrip("/")
+        if settings.servicenow_instance
+        else ""
+    )
+    if sn_url:
+        sn_section = (
+            f"\n\nSERVICENOW INSTANCE:\n"
+            f"URL: {sn_url}\n"
+            f"CI link: {sn_url}/nav_to.do?uri=cmdb_ci.do?sys_id=<SYS_ID>\n"
+            f"CI list: {sn_url}/nav_to.do?uri=cmdb_ci_list.do?sysparm_query=name=<NAME>\n"
+            f"In table artifacts, make the Name column a markdown link: [CI Name](url)\n"
+            f"In your summary text, include clickable links for the top 10 CIs mentioned."
+        )
+        return SYSTEM_PROMPT + sn_section
+    return SYSTEM_PROMPT
+
+
 # ---------------------------------------------------------------------------
 # Core streaming function
 # ---------------------------------------------------------------------------
@@ -544,7 +630,7 @@ async def stream_claude_response(
             model=settings.claude_model,
             max_tokens=settings.claude_max_tokens,
             temperature=settings.claude_temperature,
-            system=SYSTEM_PROMPT,
+            system=_build_system_prompt(),
             messages=messages,
             tools=ALL_TOOLS,
         ) as stream:
@@ -573,6 +659,8 @@ async def stream_claude_response(
         collected_actions: list[dict] = []
         # Artifacts created via create_artifact tool calls
         collected_artifacts: list[dict] = []
+        # Follow-up suggestions from suggest_follow_ups tool
+        collected_follow_ups: list[dict] = []
 
         # If Claude wants to call tools, execute them and get a follow-up response
         if tool_use_blocks:
@@ -601,6 +689,7 @@ async def stream_claude_response(
 
             # Execute each tool call
             tool_results: list[dict] = []
+            has_orchestrator_tools = False
             for tool_block in tool_use_blocks:
                 try:
                     tool_input = json.loads(tool_block["input_json"])
@@ -612,18 +701,22 @@ async def stream_claude_response(
                     )
                     tool_input = {"query": content, "_parse_error": str(e)}
 
-                # Handle create_artifact locally (not an orchestrator tool)
-                if tool_block["name"] == "create_artifact":
-                    artifact = _build_artifact_from_tool(tool_input)
-                    if artifact:
-                        collected_artifacts.append(artifact)
+                # Handle local tools (not routed to orchestrator)
+                if tool_block["name"] in LOCAL_TOOLS:
+                    if tool_block["name"] == "create_artifact":
+                        artifact = _build_artifact_from_tool(tool_input)
+                        if artifact:
+                            collected_artifacts.append(artifact)
+                    elif tool_block["name"] == "suggest_follow_ups":
+                        collected_follow_ups.extend(_extract_follow_ups(tool_input))
                     tool_results.append({
                         "type": "tool_result",
                         "tool_use_id": tool_block["id"],
-                        "content": "Artifact created successfully.",
+                        "content": f"{tool_block['name']} processed successfully.",
                     })
                     continue
 
+                has_orchestrator_tools = True
                 result_text, actions = await _call_orchestrator_tool(
                     tool_name=tool_block["name"],
                     tool_input=tool_input,
@@ -637,58 +730,62 @@ async def stream_claude_response(
                     "content": result_text,
                 })
 
-            # Add tool results to history
-            history.add(conversation_id, {"role": "user", "content": tool_results})
+            if has_orchestrator_tools:
+                # Add tool results to history
+                history.add(conversation_id, {"role": "user", "content": tool_results})
 
-            # Second Claude call: interpret tool results
-            messages_with_results = history.get(conversation_id)
-            full_content = ""  # Reset for second response
-            second_round_tool_blocks: list[dict] = []
+                # Second Claude call: interpret tool results
+                messages_with_results = history.get(conversation_id)
+                full_content = ""  # Reset for second response
+                second_round_tool_blocks: list[dict] = []
 
-            async with client.messages.stream(
-                model=settings.claude_model,
-                max_tokens=settings.claude_max_tokens,
-                temperature=settings.claude_temperature,
-                system=SYSTEM_PROMPT,
-                messages=messages_with_results,
-                tools=ALL_TOOLS,
-            ) as stream:
-                async for event in stream:
-                    if event.type == "content_block_start":
-                        if event.content_block.type == "tool_use":
-                            second_round_tool_blocks.append({
-                                "name": event.content_block.name,
-                                "input_json": "",
-                            })
-                    elif event.type == "content_block_delta":
-                        if event.delta.type == "text_delta":
-                            text = event.delta.text
-                            full_content += text
-                            yield _sse_event("token", {
-                                "token": text,
-                                "message_id": message_id,
-                            })
-                        elif event.delta.type == "input_json_delta":
-                            if second_round_tool_blocks:
-                                second_round_tool_blocks[-1]["input_json"] += (
-                                    event.delta.partial_json
-                                )
+                async with client.messages.stream(
+                    model=settings.claude_model,
+                    max_tokens=settings.claude_max_tokens,
+                    temperature=settings.claude_temperature,
+                    system=_build_system_prompt(),
+                    messages=messages_with_results,
+                    tools=ALL_TOOLS,
+                ) as stream:
+                    async for event in stream:
+                        if event.type == "content_block_start":
+                            if event.content_block.type == "tool_use":
+                                second_round_tool_blocks.append({
+                                    "name": event.content_block.name,
+                                    "input_json": "",
+                                })
+                        elif event.type == "content_block_delta":
+                            if event.delta.type == "text_delta":
+                                text = event.delta.text
+                                full_content += text
+                                yield _sse_event("token", {
+                                    "token": text,
+                                    "message_id": message_id,
+                                })
+                            elif event.delta.type == "input_json_delta":
+                                if second_round_tool_blocks:
+                                    second_round_tool_blocks[-1]["input_json"] += (
+                                        event.delta.partial_json
+                                    )
 
-            # Process create_artifact tool calls from the second round
-            for tb in second_round_tool_blocks:
-                if tb["name"] == "create_artifact":
-                    try:
-                        ti = json.loads(tb["input_json"])
-                    except json.JSONDecodeError:
-                        continue
-                    artifact = _build_artifact_from_tool(ti)
-                    if artifact:
-                        collected_artifacts.append(artifact)
-                else:
-                    logger.warning(
-                        "Ignoring unexpected tool_use '%s' in second-round response",
-                        tb["name"],
-                    )
+                # Process local tool calls from the second round
+                for tb in second_round_tool_blocks:
+                    if tb["name"] in LOCAL_TOOLS:
+                        try:
+                            ti = json.loads(tb["input_json"])
+                        except json.JSONDecodeError:
+                            continue
+                        if tb["name"] == "create_artifact":
+                            artifact = _build_artifact_from_tool(ti)
+                            if artifact:
+                                collected_artifacts.append(artifact)
+                        elif tb["name"] == "suggest_follow_ups":
+                            collected_follow_ups.extend(_extract_follow_ups(ti))
+                    else:
+                        logger.warning(
+                            "Ignoring unexpected tool_use '%s' in second-round response",
+                            tb["name"],
+                        )
 
         # Store assistant response in history
         if full_content:
@@ -704,7 +801,7 @@ async def stream_claude_response(
             if detected["title"] not in tool_titles:
                 collected_artifacts.append(detected)
 
-        # Emit stream_end (include suggested_actions from orchestrator if any)
+        # Emit stream_end (include suggested_actions from orchestrator + follow-ups)
         end_data: dict = {
             "message_id": message_id,
             "full_content": full_content,
@@ -713,8 +810,9 @@ async def stream_claude_response(
             "conversation_id": conversation_id,
             "timestamp": datetime.now(UTC).isoformat(),
         }
-        if collected_actions:
-            end_data["suggested_actions"] = collected_actions
+        all_actions = collected_actions + collected_follow_ups
+        if all_actions:
+            end_data["suggested_actions"] = all_actions
         if collected_artifacts:
             end_data["artifacts"] = collected_artifacts
         yield _sse_event("stream_end", end_data)

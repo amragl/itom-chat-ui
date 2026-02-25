@@ -584,10 +584,10 @@ class TestCreateArtifactTool:
         assert "create_artifact" in all_tool_names
 
     def test_all_tools_includes_orchestrator_tools(self):
-        """ALL_TOOLS contains all 6 orchestrator tools plus create_artifact."""
+        """ALL_TOOLS contains all 6 orchestrator tools plus local tools."""
         from app.services.claude_service import ALL_TOOLS, TOOLS
 
-        assert len(ALL_TOOLS) == len(TOOLS) + 1
+        assert len(ALL_TOOLS) == len(TOOLS) + 2
 
     def test_create_artifact_schema_required_fields(self):
         """create_artifact schema requires artifact_type, title, and content."""
@@ -830,3 +830,169 @@ class TestToolHintPassThrough:
         call_kwargs = post_mock.call_args
         payload = call_kwargs.kwargs.get("json") or call_kwargs[1].get("json")
         assert "context" not in payload
+
+
+# ---------------------------------------------------------------------------
+# suggest_follow_ups tool definition tests
+# ---------------------------------------------------------------------------
+
+
+class TestSuggestFollowUpsTool:
+    """Tests for the suggest_follow_ups tool definition."""
+
+    def test_suggest_follow_ups_not_in_tool_to_agent(self):
+        """suggest_follow_ups is local — must NOT be in TOOL_TO_AGENT."""
+        from app.services.claude_service import TOOL_TO_AGENT
+
+        assert "suggest_follow_ups" not in TOOL_TO_AGENT
+
+    def test_suggest_follow_ups_in_all_tools(self):
+        """suggest_follow_ups is in ALL_TOOLS but not in TOOLS."""
+        from app.services.claude_service import ALL_TOOLS, TOOLS
+
+        tool_names = {t["name"] for t in TOOLS}
+        all_tool_names = {t["name"] for t in ALL_TOOLS}
+
+        assert "suggest_follow_ups" not in tool_names
+        assert "suggest_follow_ups" in all_tool_names
+
+    def test_suggest_follow_ups_schema(self):
+        """suggest_follow_ups schema requires follow_ups array."""
+        from app.services.claude_service import SUGGEST_FOLLOW_UPS_TOOL
+
+        schema = SUGGEST_FOLLOW_UPS_TOOL["input_schema"]
+        assert "follow_ups" in schema["properties"]
+        assert schema["required"] == ["follow_ups"]
+
+        items = schema["properties"]["follow_ups"]["items"]
+        assert set(items["required"]) == {"label", "message"}
+
+    def test_all_tools_count(self):
+        """ALL_TOOLS = 6 orchestrator tools + create_artifact + suggest_follow_ups."""
+        from app.services.claude_service import ALL_TOOLS, TOOLS
+
+        assert len(ALL_TOOLS) == len(TOOLS) + 2
+
+
+# ---------------------------------------------------------------------------
+# _extract_follow_ups tests
+# ---------------------------------------------------------------------------
+
+
+class TestExtractFollowUps:
+    """Tests for the _extract_follow_ups helper."""
+
+    def test_valid_input(self):
+        """Extracts follow-ups from well-formed input."""
+        from app.services.claude_service import _extract_follow_ups
+
+        result = _extract_follow_ups({
+            "follow_ups": [
+                {"label": "Check health", "message": "Show CMDB health metrics"},
+                {"label": "Find stale CIs", "message": "Find stale servers"},
+                {"label": "Run audit", "message": "Run a compliance audit"},
+            ]
+        })
+
+        assert len(result) == 3
+        assert result[0]["label"] == "Check health"
+        assert result[1]["message"] == "Find stale servers"
+
+    def test_invalid_input_returns_empty(self):
+        """Returns empty list on invalid input."""
+        from app.services.claude_service import _extract_follow_ups
+
+        assert _extract_follow_ups({}) == []
+        assert _extract_follow_ups({"follow_ups": "not a list"}) == []
+        assert _extract_follow_ups({"follow_ups": None}) == []
+
+    def test_truncates_to_three(self):
+        """Only takes the first 3 follow-ups."""
+        from app.services.claude_service import _extract_follow_ups
+
+        result = _extract_follow_ups({
+            "follow_ups": [
+                {"label": f"Item {i}", "message": f"msg {i}"}
+                for i in range(5)
+            ]
+        })
+
+        assert len(result) == 3
+
+    def test_skips_malformed_entries(self):
+        """Skips entries missing required fields."""
+        from app.services.claude_service import _extract_follow_ups
+
+        result = _extract_follow_ups({
+            "follow_ups": [
+                {"label": "Good one", "message": "OK"},
+                {"label": "Missing message"},
+                {"label": "Also good", "message": "Also OK"},
+            ]
+        })
+
+        assert len(result) == 2
+        assert result[0]["label"] == "Good one"
+        assert result[1]["label"] == "Also good"
+
+
+# ---------------------------------------------------------------------------
+# LOCAL_TOOLS tests
+# ---------------------------------------------------------------------------
+
+
+class TestLocalTools:
+    """Tests for the LOCAL_TOOLS set."""
+
+    def test_local_tools_contents(self):
+        """LOCAL_TOOLS contains create_artifact and suggest_follow_ups."""
+        from app.services.claude_service import LOCAL_TOOLS
+
+        assert LOCAL_TOOLS == {"create_artifact", "suggest_follow_ups"}
+
+    def test_local_tools_not_in_tool_to_agent(self):
+        """No local tool should be in TOOL_TO_AGENT."""
+        from app.services.claude_service import LOCAL_TOOLS, TOOL_TO_AGENT
+
+        for tool_name in LOCAL_TOOLS:
+            assert tool_name not in TOOL_TO_AGENT
+
+
+# ---------------------------------------------------------------------------
+# _build_system_prompt tests
+# ---------------------------------------------------------------------------
+
+
+class TestBuildSystemPrompt:
+    """Tests for the _build_system_prompt function."""
+
+    def test_with_servicenow_instance(self):
+        """When servicenow_instance is set, prompt includes SN URLs."""
+        from app.services.claude_service import SYSTEM_PROMPT, _build_system_prompt
+
+        with patch("app.services.claude_service.get_settings") as mock_settings:
+            mock_settings.return_value.servicenow_instance = "https://myinstance.service-now.com/"
+            result = _build_system_prompt()
+
+        assert result.startswith(SYSTEM_PROMPT)
+        assert "https://myinstance.service-now.com" in result
+        assert "nav_to.do?uri=cmdb_ci.do" in result
+        # Should strip trailing slash
+        assert "service-now.com//" not in result
+
+    def test_without_servicenow_instance(self):
+        """When servicenow_instance is empty, returns base SYSTEM_PROMPT."""
+        from app.services.claude_service import SYSTEM_PROMPT, _build_system_prompt
+
+        with patch("app.services.claude_service.get_settings") as mock_settings:
+            mock_settings.return_value.servicenow_instance = ""
+            result = _build_system_prompt()
+
+        assert result == SYSTEM_PROMPT
+
+    def test_system_prompt_has_follow_up_instructions(self):
+        """SYSTEM_PROMPT includes follow-up suggestion instructions."""
+        from app.services.claude_service import SYSTEM_PROMPT
+
+        assert "FOLLOW-UP SUGGESTIONS" in SYSTEM_PROMPT
+        assert "suggest_follow_ups" in SYSTEM_PROMPT
