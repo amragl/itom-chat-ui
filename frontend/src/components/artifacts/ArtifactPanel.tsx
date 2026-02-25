@@ -100,6 +100,36 @@ function ArtifactContent({ artifact }: { artifact: Artifact }) {
 // Table view (inline)
 // ---------------------------------------------------------------------------
 
+/**
+ * Renders a table cell value, converting markdown links [text](url) into
+ * clickable anchor elements (e.g. ServiceNow CI links).
+ */
+function CellContent({ value }: { value: string }) {
+  const parts = value.split(/(\[[^\]]+\]\([^)]+\))/g);
+  if (parts.length === 1) return <>{value}</>;
+  return (
+    <>
+      {parts.map((part, i) => {
+        const m = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+        if (m) {
+          return (
+            <a
+              key={i}
+              href={m[2]}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary-600 underline hover:text-primary-700 dark:text-primary-400"
+            >
+              {m[1]}
+            </a>
+          );
+        }
+        return <span key={i}>{part}</span>;
+      })}
+    </>
+  );
+}
+
 function TableView({ content }: { content: string | { headers?: string[]; rows?: string[][] } }) {
   if (typeof content === 'string') {
     return <pre className="text-xs text-neutral-600">{content}</pre>;
@@ -133,7 +163,7 @@ function TableView({ content }: { content: string | { headers?: string[]; rows?:
                   key={ci}
                   className="border border-neutral-200 px-2 py-1 text-neutral-600 dark:border-neutral-600 dark:text-neutral-400"
                 >
-                  {cell}
+                  <CellContent value={cell} />
                 </td>
               ))}
             </tr>

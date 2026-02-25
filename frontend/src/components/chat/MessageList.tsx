@@ -33,6 +33,16 @@ interface MessageListProps {
  */
 const AUTO_SCROLL_THRESHOLD = 150;
 
+/** Pre-defined conversation starters shown on the empty chat state. */
+const CONVERSATION_STARTERS = [
+  { label: 'Find stale servers', message: 'Find servers not updated in the last 90 days' },
+  { label: 'Run compliance audit', message: 'Run a compliance audit on all production servers' },
+  { label: 'CMDB health dashboard', message: 'Show me the overall CMDB health metrics dashboard' },
+  { label: 'Find duplicate CIs', message: 'Find duplicate configuration items in the CMDB' },
+  { label: 'Generate a runbook', message: 'Generate a runbook for incident response procedures' },
+  { label: 'Discover network devices', message: 'Run a discovery scan on the 10.0.0.0/24 network range' },
+];
+
 // ---------------------------------------------------------------------------
 // MessageList component
 // ---------------------------------------------------------------------------
@@ -134,7 +144,7 @@ export default function MessageList({
         aria-live="polite"
       >
         {!hasMessages ? (
-          // Empty state
+          // Empty state with conversation starters
           <div className="flex h-full flex-col items-center justify-center px-6 py-12">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800">
               <svg
@@ -153,11 +163,23 @@ export default function MessageList({
               </svg>
             </div>
             <p className="mt-4 text-sm font-medium text-neutral-600 dark:text-neutral-400">
-              No messages yet
+              How can I help with your IT operations?
             </p>
-            <p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">
-              Send a message to start a conversation with an ITOM agent.
+            <p className="mt-1 mb-6 text-xs text-neutral-400 dark:text-neutral-500">
+              Choose a starter below or type your own message.
             </p>
+            <div className="grid w-full max-w-lg grid-cols-2 gap-2">
+              {CONVERSATION_STARTERS.map((starter) => (
+                <button
+                  key={starter.label}
+                  type="button"
+                  onClick={() => onSuggestedAction?.(starter.message)}
+                  className="rounded-lg border border-neutral-200 bg-white px-3 py-2.5 text-left text-xs font-medium text-neutral-700 transition-colors hover:border-primary-300 hover:bg-primary-50 active:bg-primary-100 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-primary-600 dark:hover:bg-neutral-700"
+                >
+                  {starter.label}
+                </button>
+              ))}
+            </div>
           </div>
         ) : (
           <div className="space-y-1 py-4">
