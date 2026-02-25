@@ -565,6 +565,24 @@ def _build_system_prompt() -> str:
 
 
 # ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+
+def _parse_tool_input(tool_block: dict, fallback_content: str) -> dict:
+    """Parse a tool block's accumulated JSON, with a safe fallback."""
+    try:
+        return json.loads(tool_block["input_json"])
+    except json.JSONDecodeError as e:
+        logger.warning(
+            "Malformed tool JSON from Claude: %s — raw: %s",
+            e,
+            tool_block["input_json"][:500],
+        )
+        return {"query": fallback_content, "_parse_error": str(e)}
+
+
+# ---------------------------------------------------------------------------
 # Core streaming function
 # ---------------------------------------------------------------------------
 
@@ -681,15 +699,7 @@ async def stream_claude_response(
             if full_content:
                 assistant_content.append({"type": "text", "text": full_content})
             for tool_block in tool_use_blocks:
-                try:
-                    tool_input = json.loads(tool_block["input_json"])
-                except json.JSONDecodeError as e:
-                    logger.warning(
-                        "Malformed tool JSON from Claude: %s — raw: %s",
-                        e,
-                        tool_block["input_json"][:500],
-                    )
-                    tool_input = {"query": content, "_parse_error": str(e)}
+                tool_input = _parse_tool_input(tool_block, content)
                 assistant_content.append({
                     "type": "tool_use",
                     "id": tool_block["id"],
@@ -703,15 +713,7 @@ async def stream_claude_response(
             tool_results: list[dict] = []
             has_orchestrator_tools = False
             for tool_block in tool_use_blocks:
-                try:
-                    tool_input = json.loads(tool_block["input_json"])
-                except json.JSONDecodeError as e:
-                    logger.warning(
-                        "Malformed tool JSON from Claude: %s — raw: %s",
-                        e,
-                        tool_block["input_json"][:500],
-                    )
-                    tool_input = {"query": content, "_parse_error": str(e)}
+                tool_input = _parse_tool_input(tool_block, content)
 
                 # Handle local tools (not routed to orchestrator)
                 if tool_block["name"] in LOCAL_TOOLS:
@@ -763,6 +765,7 @@ async def stream_claude_response(
                         if event.type == "content_block_start":
                             if event.content_block.type == "tool_use":
                                 second_round_tool_blocks.append({
+                                    "id": event.content_block.id,
                                     "name": event.content_block.name,
                                     "input_json": "",
                                 })
@@ -848,8 +851,8 @@ async def stream_claude_response(
             yield event
         stream_end_emitted = True  # fallback emits its own stream_end
 
-    except anthropic.APIError as exc:
-        logger.warning("Claude API error (%s) — falling back to legacy streaming", exc)
+    except anthropic.APIError:
+        logger.exception("Claude API error — falling back to legacy streaming")
         from .streaming import stream_chat_response
 
         async for event in stream_chat_response(content, conversation_id, agent_target):

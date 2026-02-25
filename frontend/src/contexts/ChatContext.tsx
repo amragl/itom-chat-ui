@@ -12,6 +12,7 @@ import {
 import type { Agent, Artifact, ClarificationData, Message, SuggestedAction, WebSocketChatPayload, WebSocketMessage } from '@/types';
 import { apiClient, getStreamAuthHeaders } from '@/lib/api';
 import { buildHelpText, buildPrompt, parseCommand } from '@/lib/commands';
+import { parseSSEBuffer } from '@/lib/sse';
 import { useStreamingResponse } from '@/hooks/useStreamingResponse';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import type { ConnectionStatus } from '@/hooks/useWebSocket';
@@ -369,7 +370,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
             setIsLoading(false);
             return;
           }
-          // Parse SSE directly (startStreaming targets /api/chat/stream, not /api/chat/clarify)
+          // Parse SSE using shared utility (same format as /api/chat/stream)
           const reader = response.body.getReader();
           const decoder = new TextDecoder();
           let buffer = '';
@@ -381,26 +382,18 @@ export function ChatProvider({ children }: ChatProviderProps) {
             const { done, value } = await reader.read();
             if (done) break;
             buffer += decoder.decode(value, { stream: true });
-            const events = buffer.split('\n\n');
-            buffer = events.pop() ?? '';
-            for (const eventStr of events) {
-              for (const line of eventStr.split('\n')) {
-                if (!line.startsWith('data: ')) continue;
-                try {
-                  const parsed = JSON.parse(line.slice(6)) as { event: string; data: Record<string, unknown> };
-                  if (parsed.event === 'token') {
-                    fullContent += String(parsed.data.token ?? '');
-                  } else if (parsed.event === 'stream_end') {
-                    fullContent = String(parsed.data.full_content ?? fullContent);
-                    if (Array.isArray(parsed.data.artifacts) && parsed.data.artifacts.length > 0) {
-                      clarifyArtifacts = parsed.data.artifacts as Artifact[];
-                    }
-                    if (Array.isArray(parsed.data.suggested_actions) && parsed.data.suggested_actions.length > 0) {
-                      clarifySuggestedActions = parsed.data.suggested_actions as SuggestedAction[];
-                    }
-                  }
-                } catch {
-                  // ignore parse errors
+            const { events, remaining } = parseSSEBuffer(buffer);
+            buffer = remaining;
+            for (const parsed of events) {
+              if (parsed.event === 'token') {
+                fullContent += String(parsed.data.token ?? '');
+              } else if (parsed.event === 'stream_end') {
+                fullContent = String(parsed.data.full_content ?? fullContent);
+                if (Array.isArray(parsed.data.artifacts) && parsed.data.artifacts.length > 0) {
+                  clarifyArtifacts = parsed.data.artifacts as Artifact[];
+                }
+                if (Array.isArray(parsed.data.suggested_actions) && parsed.data.suggested_actions.length > 0) {
+                  clarifySuggestedActions = parsed.data.suggested_actions as SuggestedAction[];
                 }
               }
             }

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Artifact, ClarificationData, StreamErrorData, StreamingState, StreamingStatus, SuggestedAction } from '@/types';
 import { getStreamAuthHeaders } from '@/lib/api';
+import { parseSSEEvent } from '@/lib/sse';
 
 /**
  * Options for configuring the streaming response hook.
@@ -98,25 +99,6 @@ export function useStreamingResponse(
   useEffect(() => {
     callbacksRef.current = { onStreamStart, onToken, onStreamEnd, onError, onClarification };
   }, [onStreamStart, onToken, onStreamEnd, onError, onClarification]);
-
-  /**
-   * Parse a single SSE "data: ..." line into a structured event.
-   */
-  const parseSSELine = useCallback(
-    (line: string): { event: string; data: Record<string, unknown> } | null => {
-      const trimmed = line.trim();
-      if (!trimmed || !trimmed.startsWith('data: ')) return null;
-
-      const jsonStr = trimmed.slice(6); // Remove "data: " prefix
-      try {
-        const parsed = JSON.parse(jsonStr) as { event: string; data: Record<string, unknown> };
-        return parsed;
-      } catch {
-        return null;
-      }
-    },
-    [],
-  );
 
   /**
    * Abort the current streaming request if one is in progress.
@@ -268,7 +250,7 @@ export function useStreamingResponse(
             buffer = events.pop() ?? '';
 
             for (const eventStr of events) {
-              const parsed = parseSSELine(eventStr);
+              const parsed = parseSSEEvent(eventStr);
               if (!parsed) continue;
 
               const { event, data } = parsed;
@@ -406,7 +388,7 @@ export function useStreamingResponse(
           callbacksRef.current.onError?.(errorData);
         });
     },
-    [apiBaseUrl, parseSSELine],
+    [apiBaseUrl],
   );
 
   return { state, startStreaming, abortStreaming, resetState };

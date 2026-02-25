@@ -118,7 +118,7 @@ export default function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
   }, [fetchConversations]);
 
   const handleDeleteConversation = useCallback(
-    async (e: React.MouseEvent, convId: string) => {
+    async (e: React.MouseEvent | React.KeyboardEvent, convId: string) => {
       e.preventDefault();
       e.stopPropagation();
       try {
@@ -207,12 +207,11 @@ export default function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
                 ) : (
                   <>
                     <span className="min-w-0 flex-1 truncate">{conv.title || 'Untitled'}</span>
-                    <span
-                      role="button"
-                      tabIndex={0}
+                    <button
+                      type="button"
                       onClick={(e) => handleDeleteConversation(e, conv.id)}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') handleDeleteConversation(e as unknown as React.MouseEvent, conv.id);
+                        if (e.key === 'Enter' || e.key === ' ') handleDeleteConversation(e, conv.id);
                       }}
                       className="shrink-0 rounded p-0.5 opacity-0 transition-opacity hover:bg-neutral-200 group-hover:opacity-100 dark:hover:bg-neutral-700"
                       aria-label={`Delete ${conv.title || 'conversation'}`}
@@ -220,7 +219,7 @@ export default function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5">
                         <path d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z" />
                       </svg>
-                    </span>
+                    </button>
                   </>
                 )}
               </button>
