@@ -181,7 +181,13 @@ class OrchestratorService:
                 "status": f"Orchestrator returned HTTP {response.status_code}.",
             }
 
-        return response.json()
+        try:
+            return response.json()
+        except (ValueError, KeyError):
+            return {
+                "items": [],
+                "status": "Orchestrator returned malformed JSON.",
+            }
 
     async def check_health(self) -> dict[str, Any]:
         """Check whether the orchestrator is reachable and healthy.
