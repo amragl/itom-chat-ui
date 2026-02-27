@@ -96,10 +96,15 @@ And also:
 # ---------------------------------------------------------------------------
 
 class TestTableDetection:
-    """Tests for markdown table detection."""
+    """Tests for markdown table detection.
 
-    def test_detects_markdown_table(self, detector: ArtifactDetector) -> None:
-        """Should detect a standard markdown table."""
+    Table extraction is intentionally disabled in detect() so that
+    react-markdown renders tables natively with SN links and footer
+    intact.  These tests verify the disabled behavior.
+    """
+
+    def test_tables_not_extracted(self, detector: ArtifactDetector) -> None:
+        """Tables should NOT be extracted as artifacts (disabled for native rendering)."""
         text = """Results:
 
 | Server | Status | IP |
@@ -112,10 +117,7 @@ Done.
 """
         artifacts = detector.detect(text)
         table_artifacts = [a for a in artifacts if a.artifact_type == ArtifactType.TABLE]
-        assert len(table_artifacts) == 1
-        assert table_artifacts[0].content["headers"] == ["Server", "Status", "IP"]
-        assert len(table_artifacts[0].content["rows"]) == 3
-        assert table_artifacts[0].metadata["row_count"] == 3
+        assert len(table_artifacts) == 0
 
     def test_ignores_single_row(self, detector: ArtifactDetector) -> None:
         """A single pipe-delimited line should not be detected as a table."""

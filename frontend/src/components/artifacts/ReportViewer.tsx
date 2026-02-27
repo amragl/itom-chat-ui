@@ -5,7 +5,8 @@
  * color-coded severity levels.
  *
  * Accepts either a JSON object with structured report data or a plain text
- * string containing the raw report content.
+ * string containing the raw report content.  Findings and sections can
+ * include optional SN links for drill-down into affected CIs.
  */
 
 // ---------------------------------------------------------------------------
@@ -15,6 +16,7 @@
 interface ReportData {
   title?: string;
   score?: number;
+  score_link?: string;
   overall_score?: string;
   status?: string;
   sections?: ReportSection[];
@@ -27,6 +29,7 @@ interface ReportSection {
   content?: string;
   status?: string;
   score?: number;
+  link?: string;
 }
 
 interface ReportFinding {
@@ -34,6 +37,8 @@ interface ReportFinding {
   title?: string;
   description?: string;
   recommendation?: string;
+  link?: string;
+  affected_count?: number;
 }
 
 interface ReportViewerProps {
@@ -61,7 +66,10 @@ export default function ReportViewer({ content }: ReportViewerProps) {
       {/* Score indicator */}
       {(report.score !== undefined || report.overall_score !== undefined) && (
         <div className="flex items-center gap-3">
-          <ScoreIndicator score={report.score ?? parseFloat(report.overall_score ?? '0')} />
+          <ScoreIndicator
+            score={report.score ?? parseFloat(report.overall_score ?? '0')}
+            link={report.score_link}
+          />
           {report.status && (
             <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${getStatusColor(report.status)}`}>
               {report.status}
@@ -80,7 +88,18 @@ export default function ReportViewer({ content }: ReportViewerProps) {
             >
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">
-                  {section.title}
+                  {section.link ? (
+                    <a
+                      href={section.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary-600 underline hover:text-primary-700 dark:text-primary-400"
+                    >
+                      {section.title}
+                    </a>
+                  ) : (
+                    section.title
+                  )}
                 </h4>
                 {section.score !== undefined && (
                   <span className="text-xs font-medium text-neutral-500">{section.score}%</span>
@@ -129,6 +148,20 @@ export default function ReportViewer({ content }: ReportViewerProps) {
                   {finding.description}
                 </p>
               )}
+              {finding.link && (
+                <a
+                  href={finding.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-1.5 inline-flex items-center gap-1 text-xs text-primary-600 underline hover:text-primary-700 dark:text-primary-400"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3 w-3">
+                    <path fillRule="evenodd" d="M8.914 6.025a.75.75 0 0 1 1.06 0 3.5 3.5 0 0 1 0 4.95l-2 2a3.5 3.5 0 0 1-5.396-4.402.75.75 0 0 1 1.251.827 2 2 0 0 0 3.085 2.514l2-2a2 2 0 0 0 0-2.828.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
+                    <path fillRule="evenodd" d="M7.086 9.975a.75.75 0 0 1-1.06 0 3.5 3.5 0 0 1 0-4.95l2-2a3.5 3.5 0 0 1 5.396 4.402.75.75 0 0 1-1.251-.827 2 2 0 0 0-3.085-2.514l-2 2a2 2 0 0 0 0 2.828.75.75 0 0 1 0 1.06Z" clipRule="evenodd" />
+                  </svg>
+                  View {finding.affected_count ?? ''} affected CI{finding.affected_count !== 1 ? 's' : ''} in ServiceNow
+                </a>
+              )}
               {finding.recommendation && (
                 <p className="mt-1 text-xs italic text-neutral-500 dark:text-neutral-500">
                   Recommendation: {finding.recommendation}
@@ -153,14 +186,28 @@ export default function ReportViewer({ content }: ReportViewerProps) {
 // Score indicator
 // ---------------------------------------------------------------------------
 
-function ScoreIndicator({ score }: { score: number }) {
+function ScoreIndicator({ score, link }: { score: number; link?: string }) {
   let colorClass = 'text-success-600';
   if (score < 50) colorClass = 'text-error-600';
   else if (score < 80) colorClass = 'text-warning-600';
 
+  const scoreEl = <span className={`text-2xl font-bold ${colorClass}`}>{Math.round(score)}%</span>;
+
   return (
     <div className="flex items-center gap-2">
-      <span className={`text-2xl font-bold ${colorClass}`}>{Math.round(score)}%</span>
+      {link ? (
+        <a
+          href={link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="decoration-dotted underline underline-offset-2 hover:decoration-solid"
+          title="View in ServiceNow"
+        >
+          {scoreEl}
+        </a>
+      ) : (
+        scoreEl
+      )}
       <span className="text-xs text-neutral-500">compliance score</span>
     </div>
   );

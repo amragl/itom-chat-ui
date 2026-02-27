@@ -12,6 +12,8 @@ import ReportViewer from './ReportViewer';
 interface ArtifactPanelProps {
   /** List of artifacts detected in an agent response. */
   artifacts: Artifact[];
+  /** Called when a drill-down action is triggered (e.g. from a dashboard metric). */
+  onDrillDown?: (message: string, agentTarget?: string) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -29,7 +31,7 @@ interface ArtifactPanelProps {
  * - table   -> inline table rendering
  * - code    -> code block rendering
  */
-export default function ArtifactPanel({ artifacts }: ArtifactPanelProps) {
+export default function ArtifactPanel({ artifacts, onDrillDown }: ArtifactPanelProps) {
   if (!artifacts || artifacts.length === 0) return null;
 
   return (
@@ -52,7 +54,7 @@ export default function ArtifactPanel({ artifacts }: ArtifactPanelProps) {
 
           {/* Content */}
           <div className="p-3">
-            <ArtifactContent artifact={artifact} />
+            <ArtifactContent artifact={artifact} onDrillDown={onDrillDown} />
           </div>
         </div>
       ))}
@@ -64,7 +66,7 @@ export default function ArtifactPanel({ artifacts }: ArtifactPanelProps) {
 // Content routing
 // ---------------------------------------------------------------------------
 
-function ArtifactContent({ artifact }: { artifact: Artifact }) {
+function ArtifactContent({ artifact, onDrillDown }: { artifact: Artifact; onDrillDown?: (message: string, agentTarget?: string) => void }) {
   // Backend stringifies structured content for transport — parse it back
   // so viewers can use their rich rendering paths.
   let parsedContent: unknown = artifact.content;
@@ -76,7 +78,7 @@ function ArtifactContent({ artifact }: { artifact: Artifact }) {
     case 'report':
       return <ReportViewer content={parsedContent as string} />;
     case 'dashboard':
-      return <DashboardRenderer content={parsedContent as string} />;
+      return <DashboardRenderer content={parsedContent as string} onDrillDown={onDrillDown} />;
     case 'document':
       return <DocumentViewer content={parsedContent as string | Record<string, unknown>} />;
     case 'table':

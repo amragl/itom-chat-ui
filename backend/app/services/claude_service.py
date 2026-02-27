@@ -86,6 +86,15 @@ with a link to the full list view.
 - When creating a remediation request after a CMDB query, FIRST show the user which \
 CIs you found (via create_artifact with type "table"), THEN proceed to create the request.
 
+PRESERVING STRUCTURED DATA FROM TOOL RESULTS (CRITICAL):
+When the tool result contains a ```dashboard or ```report fenced code block with JSON inside, \
+you MUST parse that JSON and pass it DIRECTLY to create_artifact as the content. Do NOT \
+reconstruct or reformat the metrics — the JSON contains structured MetricValue objects with \
+"link" and "drill_down" fields that the frontend needs for clickable ServiceNow links. \
+Example: if the tool result has a metric like {"Total CIs": {"value": 42, "link": "https://...", \
+"drill_down": "Show all server CIs"}}, pass that EXACT structure in the dashboard content \
+metrics, not just {"Total CIs": 42}.
+
 REMEDIATION REQUEST TYPES:
 There are 2 remediation modes:
 1. Manual — CI owners must update their CIs (for missing data: serial numbers, owners, OS info). \
@@ -341,10 +350,11 @@ CREATE_ARTIFACT_TOOL = {
         "data that is better presented as a visual component (dashboard, report, table, document) "
         "rather than as inline text.\n\n"
         "Content schemas by artifact_type:\n"
-        "- report: {score?, status?, sections?: [{title, content, score?, status?}], "
-        "findings?: [{severity, title?, description, recommendation?}]}\n"
-        "- dashboard: {status?, metrics?: {key: number|string}, "
-        "agents?: [{name, status, response_time_ms?}]}\n"
+        "- report: {score?, score_link?: string, status?, sections?: [{title, content, score?, status?, link?}], "
+        "findings?: [{severity, title?, description, recommendation?, link?: string (SN URL), affected_count?: number}]}\n"
+        "- dashboard: {status?, metrics?: {key: number|string|MetricValue}, "
+        "agents?: [{name, status, response_time_ms?}]}  "
+        "MetricValue = {value: number|string, link?: string (SN URL), drill_down?: string}\n"
         "- table: {headers: string[], rows: string[][]}\n"
         "- document: {markdown: string}"
     ),

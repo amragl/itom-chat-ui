@@ -93,7 +93,10 @@ class ArtifactDetector:
         artifacts.extend(self._detect_dashboard_blocks(response_text))
         artifacts.extend(self._detect_report_blocks(response_text))
         artifacts.extend(self._detect_json_blocks(response_text))
-        artifacts.extend(self._detect_table_blocks(response_text))
+        # Table extraction disabled: let react-markdown render tables
+        # natively so SN links and "Show all in ServiceNow" footers
+        # are preserved in the inline markdown.
+        # artifacts.extend(self._detect_table_blocks(response_text))
         artifacts.extend(self._detect_report_headings(response_text))
         return artifacts
 

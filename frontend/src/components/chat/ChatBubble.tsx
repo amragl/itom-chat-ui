@@ -108,6 +108,11 @@ const markdownComponents: Components = {
       return <MermaidDiagram chart={code} />;
     }
 
+    // Hide dashboard/report blocks — rendered richly in ArtifactPanel
+    if (language === 'dashboard' || language === 'report') {
+      return null;
+    }
+
     // Inline code (no className) vs fenced code block
     const isBlock = className != null;
     if (isBlock) {
@@ -239,7 +244,7 @@ export default function ChatBubble({ message, isStreaming = false, onSuggestedAc
 
         {/* Artifacts detected in the response */}
         {!isStreaming && message.artifacts?.length ? (
-          <ArtifactPanel artifacts={message.artifacts} />
+          <ArtifactPanel artifacts={message.artifacts} onDrillDown={onSuggestedAction} />
         ) : null}
 
         {/* Suggested follow-up actions */}
