@@ -18,9 +18,9 @@ export default function SuggestedActions({ actions, onActionClick }: SuggestedAc
 
   return (
     <div className="mt-2 flex flex-wrap gap-2">
-      {actions.map((action) => (
+      {actions.map((action, idx) => (
         <button
-          key={action.label}
+          key={`${idx}-${action.label}`}
           type="button"
           onClick={() => onActionClick(action.message, action.agent_target)}
           className="rounded-full border border-primary-300 bg-white px-3 py-1 text-xs font-medium text-primary-700 transition-colors hover:bg-primary-50 hover:border-primary-400 active:bg-primary-100 dark:border-primary-600 dark:bg-neutral-800 dark:text-primary-300 dark:hover:bg-neutral-700"
