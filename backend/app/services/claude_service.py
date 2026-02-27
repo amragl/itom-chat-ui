@@ -86,14 +86,11 @@ with a link to the full list view.
 - When creating a remediation request after a CMDB query, FIRST show the user which \
 CIs you found (via create_artifact with type "table"), THEN proceed to create the request.
 
-PRESERVING STRUCTURED DATA FROM TOOL RESULTS (CRITICAL):
-When the tool result contains a ```dashboard or ```report fenced code block with JSON inside, \
-you MUST parse that JSON and pass it DIRECTLY to create_artifact as the content. Do NOT \
-reconstruct or reformat the metrics — the JSON contains structured MetricValue objects with \
-"link" and "drill_down" fields that the frontend needs for clickable ServiceNow links. \
-Example: if the tool result has a metric like {"Total CIs": {"value": 42, "link": "https://...", \
-"drill_down": "Show all server CIs"}}, pass that EXACT structure in the dashboard content \
-metrics, not just {"Total CIs": 42}.
+PRESERVING STRUCTURED DATA FROM TOOL RESULTS:
+When the tool result contains a ```dashboard or ```report fenced code block with JSON, \
+you do NOT need to create an artifact for it — the system extracts these automatically. \
+Focus your create_artifact calls on data that is NOT already in a dashboard/report block. \
+Do NOT fabricate ServiceNow URLs — only use URLs that appear in the tool result.
 
 REMEDIATION REQUEST TYPES:
 There are 2 remediation modes:
@@ -701,6 +698,9 @@ async def stream_claude_response(
         collected_artifacts: list[dict] = []
         # Follow-up suggestions from suggest_follow_ups tool
         collected_follow_ups: list[dict] = []
+        # Authoritative artifacts pre-extracted from orchestrator responses
+        # (contain real SN URLs — these replace any Claude-fabricated versions)
+        authoritative_artifacts: list[dict] = []
 
         # If Claude wants to call tools, execute them and get a follow-up response
         if tool_use_blocks:
@@ -741,13 +741,15 @@ async def stream_claude_response(
                     continue
 
                 has_orchestrator_tools = True
-                result_text, actions = await _call_orchestrator_tool(
+                result_text, actions, auth_arts = await _call_orchestrator_tool(
                     tool_name=tool_block["name"],
                     tool_input=tool_input,
                     conversation_id=conversation_id,
                 )
                 if actions:
                     collected_actions.extend(actions)
+                if auth_arts:
+                    authoritative_artifacts.extend(auth_arts)
                 tool_results.append({
                     "type": "tool_result",
                     "tool_use_id": tool_block["id"],
@@ -816,14 +818,30 @@ async def stream_claude_response(
         if full_content:
             history.add(conversation_id, {"role": "assistant", "content": full_content})
 
+        # Replace Claude-fabricated dashboard/report artifacts with
+        # authoritative versions that contain real ServiceNow URLs.
+        if authoritative_artifacts:
+            auth_types = {a["type"] for a in authoritative_artifacts}
+            # Drop Claude's fabricated versions for types we have authoritative data for
+            collected_artifacts = [
+                a for a in collected_artifacts
+                if a["type"] not in auth_types
+            ]
+            # Prepend authoritative artifacts (real SN URLs)
+            collected_artifacts = authoritative_artifacts + collected_artifacts
+
         # Detect artifacts in the final response content (passive fallback)
         detected_artifacts = _artifact_detector.detect(full_content)
         serialized_detected = ArtifactDetector.serialize_for_frontend(detected_artifacts)
 
-        # Merge: tool-created artifacts take priority; deduplicate by title
-        tool_titles = {a["title"] for a in collected_artifacts}
+        # Merge: existing artifacts take priority; deduplicate by type+title
+        existing_keys = {(a["type"], a["title"]) for a in collected_artifacts}
+        existing_types = {a["type"] for a in collected_artifacts}
         for detected in serialized_detected:
-            if detected["title"] not in tool_titles:
+            # Skip if we already have an authoritative artifact of this type
+            if detected["type"] in existing_types and detected["type"] in {"dashboard", "report"}:
+                continue
+            if (detected["type"], detected["title"]) not in existing_keys:
                 collected_artifacts.append(detected)
 
         # Emit stream_end (include suggested_actions from orchestrator + follow-ups)
@@ -895,6 +913,38 @@ async def stream_claude_response(
 
 
 # ---------------------------------------------------------------------------
+# Authoritative artifact extraction
+# ---------------------------------------------------------------------------
+
+
+def _extract_authoritative_artifacts(response_text: str) -> list[dict]:
+    """Pre-extract dashboard/report artifacts from orchestrator response text.
+
+    These artifacts contain real ServiceNow URLs generated by the orchestrator.
+    By extracting them here, we can replace any fabricated versions that Claude
+    produces via create_artifact, ensuring ZERO MOCKS compliance.
+
+    Returns frontend-compatible artifact dicts (same shape as _build_artifact_from_tool).
+    """
+    detected = _artifact_detector.detect(response_text)
+    authoritative: list[dict] = []
+    for art in detected:
+        if art.artifact_type.value not in ("dashboard", "report"):
+            continue
+        content = art.content
+        if not isinstance(content, str):
+            content = json.dumps(content)
+        authoritative.append({
+            "id": str(uuid.uuid4()),
+            "type": art.artifact_type.value,
+            "title": art.title,
+            "content": content,
+            "metadata": {**art.metadata, "authoritative": True},
+        })
+    return authoritative
+
+
+# ---------------------------------------------------------------------------
 # Orchestrator tool caller
 # ---------------------------------------------------------------------------
 
@@ -903,7 +953,7 @@ async def _call_orchestrator_tool(
     tool_name: str,
     tool_input: dict,
     conversation_id: str,
-) -> tuple[str, list[dict]]:
+) -> tuple[str, list[dict], list[dict]]:
     """Call the ITOM orchestrator with an explicit target_agent.
 
     This bypasses the orchestrator's keyword router entirely by setting
@@ -915,13 +965,15 @@ async def _call_orchestrator_tool(
         conversation_id: Current conversation ID for session continuity.
 
     Returns:
-        A tuple of (agent_response_text, suggested_actions).
+        A tuple of (agent_response_text, suggested_actions, authoritative_artifacts).
+        Authoritative artifacts are pre-extracted from ```dashboard/```report blocks
+        in the orchestrator response and contain real ServiceNow URLs.
     """
     settings = get_settings()
     target_agent = TOOL_TO_AGENT.get(tool_name)
 
     if not target_agent:
-        return f"Unknown tool: {tool_name}", []
+        return f"Unknown tool: {tool_name}", [], []
 
     query = tool_input.get("query", "")
     context = {k: v for k, v in tool_input.items() if k != "query"}
@@ -955,6 +1007,7 @@ async def _call_orchestrator_tool(
                     f"Error: The {target_agent} agent returned HTTP {response.status_code}. "
                     "The agent may be temporarily unavailable.",
                     [],
+                    [],
                 )
 
             orch_data = response.json()
@@ -962,6 +1015,7 @@ async def _call_orchestrator_tool(
             # Extract agent_response and suggested_actions from nested structure
             resp = orch_data.get("response", {})
             actions: list[dict] = []
+            response_text = ""
             if isinstance(resp, dict):
                 result = resp.get("result", {})
                 if isinstance(result, dict):
@@ -969,22 +1023,37 @@ async def _call_orchestrator_tool(
                     if not isinstance(actions, list):
                         actions = []
                     if "agent_response" in result:
-                        return result["agent_response"], actions
-                    if result:
-                        return json.dumps(result, indent=2), actions
+                        response_text = result["agent_response"]
+                    elif result:
+                        response_text = json.dumps(result, indent=2)
 
-            # Fallback: return the whole response as JSON for Claude to interpret
-            return json.dumps(orch_data, indent=2), actions
+            if not response_text:
+                response_text = json.dumps(orch_data, indent=2)
+
+            # Pre-extract authoritative artifacts from ```dashboard/```report
+            # blocks in the orchestrator response.  These contain real SN URLs
+            # that Claude might otherwise fabricate when it calls create_artifact.
+            auth_artifacts = _extract_authoritative_artifacts(response_text)
+            if auth_artifacts:
+                logger.info(
+                    "Pre-extracted %d authoritative artifact(s) from %s response",
+                    len(auth_artifacts),
+                    tool_name,
+                )
+
+            return response_text, actions, auth_artifacts
 
     except httpx.ConnectError:
         logger.error("Cannot connect to orchestrator for tool %s", tool_name)
         return (
             "Error: Cannot connect to the ITOM orchestrator. "
-            "The orchestrator service may not be running."
-        ), []
+            "The orchestrator service may not be running.",
+            [],
+            [],
+        )
     except httpx.ReadTimeout:
         logger.error("Orchestrator timeout for tool %s", tool_name)
-        return "Error: The orchestrator took too long to respond. Please try again.", []
+        return "Error: The orchestrator took too long to respond. Please try again.", [], []
     except Exception:
         logger.exception("Unexpected error calling orchestrator for tool %s", tool_name)
-        return "Error: An unexpected error occurred while contacting the agent.", []
+        return "Error: An unexpected error occurred while contacting the agent.", [], []
