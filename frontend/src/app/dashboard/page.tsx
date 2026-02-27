@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api';
+import type { WorklogFilters } from '@/lib/api';
 import type { WorkItem } from '@/types';
 import { LoadingSpinner, EmptyState } from '@/components/ui';
 
@@ -35,6 +36,34 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 // ---------------------------------------------------------------------------
+// Filter pill component
+// ---------------------------------------------------------------------------
+
+function FilterPill({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+        active
+          ? 'border-primary-500 bg-primary-50 text-primary-700 dark:border-primary-400 dark:bg-primary-900/30 dark:text-primary-300'
+          : 'border-neutral-300 bg-surface text-neutral-600 hover:bg-neutral-50 dark:border-neutral-600 dark:text-neutral-400 dark:hover:bg-neutral-800'
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Dashboard page
 // ---------------------------------------------------------------------------
 
@@ -51,10 +80,39 @@ export default function DashboardPage() {
   const [statusMessage, setStatusMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
+  // Filter state
+  const [activeTypes, setActiveTypes] = useState<Set<string>>(new Set());
+  const [activePriorities, setActivePriorities] = useState<Set<number>>(new Set());
+
+  const toggleType = (t: string) => {
+    setActiveTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(t)) next.delete(t);
+      else next.add(t);
+      return next;
+    });
+  };
+
+  const togglePriority = (p: number) => {
+    setActivePriorities((prev) => {
+      const next = new Set(prev);
+      if (next.has(p)) next.delete(p);
+      else next.add(p);
+      return next;
+    });
+  };
+
   const fetchWorklog = useCallback(async () => {
     setIsLoading(true);
     try {
-      const data = await apiClient.getWorklog();
+      const filters: WorklogFilters = {};
+      if (activeTypes.size > 0) {
+        filters.type = Array.from(activeTypes).join(',');
+      }
+      if (activePriorities.size > 0) {
+        filters.priority = Array.from(activePriorities).join(',');
+      }
+      const data = await apiClient.getWorklog(filters);
       // Sort: priority ASC, due date ASC (nulls last), opened date ASC
       const sorted = [...data.items].sort((a, b) => {
         if (a.priority !== b.priority) return a.priority - b.priority;
@@ -71,7 +129,7 @@ export default function DashboardPage() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [activeTypes, activePriorities]);
 
   useEffect(() => {
     fetchWorklog();
@@ -120,6 +178,35 @@ export default function DashboardPage() {
             </svg>
             Refresh
           </button>
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Type:</span>
+            <FilterPill label="INC" active={activeTypes.has('incident')} onClick={() => toggleType('incident')} />
+            <FilterPill label="CHG" active={activeTypes.has('change')} onClick={() => toggleType('change')} />
+            <FilterPill label="RITM" active={activeTypes.has('ritm')} onClick={() => toggleType('ritm')} />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Priority:</span>
+            <FilterPill label="P1" active={activePriorities.has(1)} onClick={() => togglePriority(1)} />
+            <FilterPill label="P2" active={activePriorities.has(2)} onClick={() => togglePriority(2)} />
+            <FilterPill label="P3" active={activePriorities.has(3)} onClick={() => togglePriority(3)} />
+            <FilterPill label="P4" active={activePriorities.has(4)} onClick={() => togglePriority(4)} />
+          </div>
+          {(activeTypes.size > 0 || activePriorities.size > 0) && (
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTypes(new Set());
+                setActivePriorities(new Set());
+              }}
+              className="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+            >
+              Clear filters
+            </button>
+          )}
         </div>
 
         {/* Status message (e.g. orchestrator unavailable) */}

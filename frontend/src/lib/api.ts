@@ -352,12 +352,35 @@ export async function getAgent(id: string): Promise<Agent> {
 // ---------------------------------------------------------------------------
 
 /**
+ * Filter parameters for the worklog endpoint.
+ */
+export interface WorklogFilters {
+  /** Comma-separated types: "incident", "change", "ritm". */
+  type?: string;
+  /** Comma-separated priorities: "1", "2", "3", "4". */
+  priority?: string;
+  /** Filter by state label substring. */
+  state?: string;
+  /** Filter by assignee username. */
+  assignedTo?: string;
+  /** Max results per table (default 50). */
+  limit?: number;
+}
+
+/**
  * Fetch the current user's open ServiceNow work items.
  *
- * Calls GET /api/worklog.
+ * Calls GET /api/worklog with optional filter query params.
  */
-export async function getWorklog(): Promise<WorklogResponse> {
-  return apiFetch<WorklogResponse>('/api/worklog');
+export async function getWorklog(filters?: WorklogFilters): Promise<WorklogResponse> {
+  const params = new URLSearchParams();
+  if (filters?.type) params.set('type', filters.type);
+  if (filters?.priority) params.set('priority', filters.priority);
+  if (filters?.state) params.set('state', filters.state);
+  if (filters?.assignedTo) params.set('assigned_to', filters.assignedTo);
+  if (filters?.limit) params.set('limit', String(filters.limit));
+  const qs = params.toString();
+  return apiFetch<WorklogResponse>(`/api/worklog${qs ? `?${qs}` : ''}`);
 }
 
 // ---------------------------------------------------------------------------
