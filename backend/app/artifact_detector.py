@@ -67,6 +67,11 @@ _DASHBOARD_BLOCK_RE = re.compile(
     re.MULTILINE,
 )
 
+_TABLE_CODE_BLOCK_RE = re.compile(
+    r"```table\s*\n([\s\S]*?)```",
+    re.MULTILINE,
+)
+
 _REPORT_HEADING_RE = re.compile(
     r"^#+\s+.*(COMPLIANCE|AUDIT|REPORT|ASSESSMENT|HEALTH|METRICS).*$",
     re.IGNORECASE | re.MULTILINE,
@@ -91,6 +96,7 @@ class ArtifactDetector:
 
         artifacts: list[Artifact] = []
         artifacts.extend(self._detect_dashboard_blocks(response_text))
+        artifacts.extend(self._detect_table_code_blocks(response_text))
         artifacts.extend(self._detect_report_blocks(response_text))
         artifacts.extend(self._detect_json_blocks(response_text))
         # Table extraction disabled: let react-markdown render tables
@@ -238,6 +244,42 @@ class ArtifactDetector:
                     content=content,
                     raw_content=raw,
                     metadata={"source": "dashboard_block"},
+                )
+            )
+
+        return artifacts
+
+    # -- Table code blocks --------------------------------------------------
+
+    def _detect_table_code_blocks(self, text: str) -> list[Artifact]:
+        """Extract explicit ```table ... ``` code blocks.
+
+        These are structured JSON table blocks emitted by the orchestrator,
+        containing real ServiceNow links in cell values.
+        """
+        artifacts: list[Artifact] = []
+
+        for match in _TABLE_CODE_BLOCK_RE.finditer(text):
+            raw = match.group(1).strip()
+
+            try:
+                content = json.loads(raw)
+                title = (
+                    content.get("title", "Table")
+                    if isinstance(content, dict)
+                    else "Table"
+                )
+            except (json.JSONDecodeError, ValueError):
+                content = raw
+                title = "Table"
+
+            artifacts.append(
+                Artifact(
+                    artifact_type=ArtifactType.TABLE,
+                    title=str(title),
+                    content=content,
+                    raw_content=raw,
+                    metadata={"source": "table_code_block"},
                 )
             )
 

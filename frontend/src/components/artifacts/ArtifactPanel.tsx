@@ -132,13 +132,14 @@ function CellContent({ value }: { value: string }) {
   );
 }
 
-function TableView({ content }: { content: string | { headers?: string[]; rows?: string[][] } }) {
+function TableView({ content }: { content: string | { headers?: string[]; rows?: string[][]; footer_link?: { text: string; url: string } } }) {
   if (typeof content === 'string') {
     return <pre className="text-xs text-neutral-600">{content}</pre>;
   }
 
   const headers = content.headers || [];
   const rows = content.rows || [];
+  const footerLink = content.footer_link;
 
   return (
     <div className="overflow-x-auto">
@@ -172,6 +173,18 @@ function TableView({ content }: { content: string | { headers?: string[]; rows?:
           ))}
         </tbody>
       </table>
+      {footerLink && (
+        <div className="mt-2 text-center">
+          <a
+            href={footerLink.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-primary-600 underline hover:text-primary-700 dark:text-primary-400"
+          >
+            {footerLink.text}
+          </a>
+        </div>
+      )}
     </div>
   );
 }

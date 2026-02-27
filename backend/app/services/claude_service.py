@@ -929,7 +929,7 @@ def _extract_authoritative_artifacts(response_text: str) -> list[dict]:
     detected = _artifact_detector.detect(response_text)
     authoritative: list[dict] = []
     for art in detected:
-        if art.artifact_type.value not in ("dashboard", "report"):
+        if art.artifact_type.value not in ("dashboard", "report", "table"):
             continue
         content = art.content
         if not isinstance(content, str):
