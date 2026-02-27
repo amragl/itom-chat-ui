@@ -359,7 +359,10 @@ class TestCallOrchestratorTool:
                 conversation_id="conv-1",
             )
 
-        assert result == ("Found 5 production servers.", [])
+        text, actions, auth_artifacts = result
+        assert text == "Found 5 production servers."
+        assert actions == []
+        assert auth_artifacts == []
 
     @pytest.mark.asyncio
     async def test_unknown_tool(self):
@@ -372,7 +375,7 @@ class TestCallOrchestratorTool:
             conversation_id="conv-1",
         )
 
-        text, actions = result
+        text, actions, _auth = result
         assert "Unknown tool" in text
         assert actions == []
 
@@ -395,7 +398,7 @@ class TestCallOrchestratorTool:
                 conversation_id="conv-1",
             )
 
-        text, actions = result
+        text, actions, _auth = result
         assert "Error" in text
         assert "500" in text
         assert actions == []
@@ -418,7 +421,7 @@ class TestCallOrchestratorTool:
                 conversation_id="conv-1",
             )
 
-        text, actions = result
+        text, actions, _auth = result
         assert "Cannot connect" in text
         assert actions == []
 
@@ -440,7 +443,7 @@ class TestCallOrchestratorTool:
                 conversation_id="conv-1",
             )
 
-        text, actions = result
+        text, actions, _auth = result
         assert "too long" in text
         assert actions == []
 
@@ -548,10 +551,83 @@ class TestCallOrchestratorTool:
             )
 
         # Should be JSON string since no agent_response key
-        text, actions = result
+        text, actions, _auth = result
         parsed = json.loads(text)
         assert "dispatched_to" in parsed
         assert actions == []
+
+    @pytest.mark.asyncio
+    async def test_authoritative_artifacts_extracted_from_dashboard_block(self):
+        """Dashboard code blocks in orchestrator response produce authoritative artifacts."""
+        from app.services.claude_service import _call_orchestrator_tool
+
+        dashboard_json = json.dumps({
+            "title": "CMDB Health",
+            "metrics": {
+                "Total CIs": {
+                    "value": 464,
+                    "link": "https://dev354780.service-now.com/nav_to.do?uri=cmdb_ci_server_list.do",
+                    "drill_down": "Show all server CIs",
+                },
+                "Health Score": 37,
+            },
+        })
+        agent_response = f"Here are the metrics:\n\n```dashboard\n{dashboard_json}\n```\n\nDone."
+
+        orch_response = {
+            "status": "success",
+            "response": {"result": {"agent_response": agent_response}},
+        }
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = orch_response
+
+        mock_client = AsyncMock()
+        mock_client.__aenter__.return_value.post = AsyncMock(return_value=mock_response)
+
+        with patch("app.services.claude_service.httpx.AsyncClient", return_value=mock_client):
+            text, actions, auth_artifacts = await _call_orchestrator_tool(
+                tool_name="query_cmdb",
+                tool_input={"query": "show health metrics"},
+                conversation_id="conv-auth",
+            )
+
+        assert len(auth_artifacts) == 1
+        art = auth_artifacts[0]
+        assert art["type"] == "dashboard"
+        assert art["title"] == "CMDB Health"
+        assert art["metadata"]["authoritative"] is True
+        # Content should contain the real SN URL
+        content = json.loads(art["content"])
+        total_metric = content["metrics"]["Total CIs"]
+        assert total_metric["link"] == "https://dev354780.service-now.com/nav_to.do?uri=cmdb_ci_server_list.do"
+
+    @pytest.mark.asyncio
+    async def test_no_authoritative_artifacts_for_plain_response(self):
+        """Plain text responses produce no authoritative artifacts."""
+        from app.services.claude_service import _call_orchestrator_tool
+
+        orch_response = {
+            "status": "success",
+            "response": {"result": {"agent_response": "Found 5 servers."}},
+        }
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = orch_response
+
+        mock_client = AsyncMock()
+        mock_client.__aenter__.return_value.post = AsyncMock(return_value=mock_response)
+
+        with patch("app.services.claude_service.httpx.AsyncClient", return_value=mock_client):
+            _, _, auth_artifacts = await _call_orchestrator_tool(
+                tool_name="query_cmdb",
+                tool_input={"query": "show servers"},
+                conversation_id="conv-plain",
+            )
+
+        assert auth_artifacts == []
 
 
 # ---------------------------------------------------------------------------
