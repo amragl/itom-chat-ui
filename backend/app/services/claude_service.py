@@ -546,6 +546,85 @@ def _extract_follow_ups(tool_input: dict) -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
+# Fallback action generation (Layer 3 safety net)
+# ---------------------------------------------------------------------------
+
+_FALLBACK_KEYWORD_RULES: list[tuple[list[str], list[dict[str, str]]]] = [
+    (["duplicate", "dedup"], [
+        {"label": "Reconcile data", "message": "Reconcile CMDB configuration data"},
+        {"label": "Check health", "message": "Show CMDB health metrics"},
+        {"label": "Find stale", "message": "Find stale configuration items"},
+    ]),
+    (["stale", "outdated", "90 days"], [
+        {"label": "Run discovery", "message": "Run discovery scan to refresh stale data"},
+        {"label": "Create fix request", "message": "Create a service request to fix stale CIs"},
+        {"label": "Check health", "message": "Show CMDB health metrics"},
+    ]),
+    (["missing serial", "missing os", "missing owner"], [
+        {"label": "Run discovery", "message": "Run discovery scan to populate missing fields"},
+        {"label": "Create fix request", "message": "Create a service request to fix missing data"},
+        {"label": "Check health", "message": "Show CMDB health metrics"},
+    ]),
+    (["health", "kpi", "data quality"], [
+        {"label": "Find stale", "message": "Find stale configuration items"},
+        {"label": "Find duplicates", "message": "Find duplicate configuration items"},
+        {"label": "Dashboard", "message": "Show the operational dashboard"},
+    ]),
+    (["relationship", "dependency", "impact"], [
+        {"label": "Check health", "message": "Show CMDB health metrics"},
+        {"label": "Search CIs", "message": "Search for configuration items"},
+        {"label": "Run discovery", "message": "Run discovery scan"},
+    ]),
+    (["service request", "ritm", "catalog"], [
+        {"label": "Check requests", "message": "Check service request status"},
+        {"label": "CMDB health", "message": "Show CMDB health metrics"},
+        {"label": "Dashboard", "message": "Show the operational dashboard"},
+    ]),
+    (["remediation", "approve", "reject"], [
+        {"label": "Check approval", "message": "Check pending approvals"},
+        {"label": "CMDB health", "message": "Show CMDB health metrics"},
+        {"label": "Dashboard", "message": "Show the operational dashboard"},
+    ]),
+    (["discovery", "scan"], [
+        {"label": "Scan status", "message": "Show discovery scan status"},
+        {"label": "Reconcile CIs", "message": "Reconcile discovered CIs with CMDB"},
+        {"label": "CMDB health", "message": "Show CMDB health metrics"},
+    ]),
+    (["audit", "compliance", "drift"], [
+        {"label": "Full audit", "message": "Run a full compliance audit"},
+        {"label": "Config drift", "message": "Detect configuration drift"},
+        {"label": "Audit report", "message": "Generate audit report"},
+    ]),
+    (["asset", "license"], [
+        {"label": "Asset lifecycle", "message": "Show asset lifecycle summary"},
+        {"label": "License check", "message": "Run license compliance check"},
+        {"label": "Reconcile assets", "message": "Reconcile assets with CMDB"},
+    ]),
+]
+
+_FALLBACK_DEFAULT_ACTIONS: list[dict[str, str]] = [
+    {"label": "CMDB health", "message": "Show CMDB health metrics"},
+    {"label": "Dashboard", "message": "Show the operational dashboard"},
+    {"label": "Search CIs", "message": "Search for configuration items"},
+]
+
+
+def _generate_fallback_actions(
+    original_message: str, response_text: str,
+) -> list[dict[str, str]]:
+    """Generate fallback suggested actions when Claude didn't produce any.
+
+    Scans original message + response text for keywords and returns
+    contextual pills.  Always returns at least 3 real actions.
+    """
+    combined = f"{original_message} {response_text}".lower()
+    for keywords, actions in _FALLBACK_KEYWORD_RULES:
+        if any(kw in combined for kw in keywords):
+            return list(actions[:3])
+    return list(_FALLBACK_DEFAULT_ACTIONS)
+
+
+# ---------------------------------------------------------------------------
 # Dynamic system prompt
 # ---------------------------------------------------------------------------
 
@@ -854,8 +933,9 @@ async def stream_claude_response(
             "timestamp": datetime.now(UTC).isoformat(),
         }
         all_actions = collected_actions + collected_follow_ups
-        if all_actions:
-            end_data["suggested_actions"] = all_actions
+        if not all_actions:
+            all_actions = _generate_fallback_actions(content, full_content)
+        end_data["suggested_actions"] = all_actions
         if collected_artifacts:
             end_data["artifacts"] = collected_artifacts
         yield _sse_event("stream_end", end_data)
