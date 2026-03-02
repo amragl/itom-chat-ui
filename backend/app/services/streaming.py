@@ -156,6 +156,7 @@ async def stream_chat_response(
 
             # SE-012: Handle clarification response from orchestrator
             if orch_data.get("response_type") == "clarification":
+                clarification_actions = orch_data.get("suggested_actions", [])
                 clarification_event = {
                     "event": "clarification",
                     "data": {
@@ -163,6 +164,7 @@ async def stream_chat_response(
                         "options": orch_data.get("options", []),
                         "pending_message_token": orch_data.get("pending_message_token", ""),
                         "message_id": orch_data.get("message_id", message_id),
+                        "suggested_actions": clarification_actions,
                     },
                 }
                 yield f"data: {json.dumps(clarification_event)}\n\n"
@@ -176,6 +178,7 @@ async def stream_chat_response(
                         "agent_name": "orchestrator",
                         "conversation_id": conversation_id,
                         "timestamp": datetime.now(UTC).isoformat(),
+                        "suggested_actions": clarification_actions,
                     },
                 }
                 yield f"data: {json.dumps(end_event)}\n\n"
