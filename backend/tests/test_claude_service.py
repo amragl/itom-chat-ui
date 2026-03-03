@@ -203,18 +203,18 @@ class TestToolToAgent:
             f"missing={tool_names - mapped_names}, extra={mapped_names - tool_names}"
         )
 
-    def test_six_tools_defined(self):
-        """Exactly 6 ITOM agent tools are defined."""
+    def test_seven_tools_defined(self):
+        """Exactly 7 ITOM agent tools are defined."""
         from app.services.claude_service import TOOLS
 
-        assert len(TOOLS) == 6
+        assert len(TOOLS) == 7
 
     def test_agent_ids(self):
         """TOOL_TO_AGENT maps to known orchestrator agent IDs."""
         from app.services.claude_service import TOOL_TO_AGENT
 
         expected_agents = {
-            "cmdb-agent", "csa-agent", "discovery",
+            "task-manager-agent", "cmdb-agent", "csa-agent", "discovery",
             "asset", "auditor", "documentator",
         }
         assert set(TOOL_TO_AGENT.values()) == expected_agents

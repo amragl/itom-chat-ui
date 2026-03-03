@@ -22,6 +22,7 @@ import uuid
 from collections import OrderedDict
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
+from typing import Any
 
 import anthropic
 import httpx
@@ -52,7 +53,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 SYSTEM_PROMPT = """You are an ITOM (IT Operations Management) assistant integrated with \
-ServiceNow. You help users manage their IT infrastructure through 6 specialized agent tools.
+ServiceNow. You help users manage their IT infrastructure through 7 specialized agent tools.
 
 Instructions:
 - Use the appropriate tool when users ask about infrastructure, services, assets, \
@@ -109,6 +110,20 @@ previous results:
 
 AVAILABLE MCP TOOLS (set tool_hint to the exact tool name when you can determine the specific operation):
 
+TASK MANAGER (manage_tasks):
+  get_task(task_number) — get a task by number (INC, CHG, REQ, RITM, SCTASK)
+  search_tasks(task_type, query, assigned_to, state, priority, limit) — search tasks with filters
+  get_task_summary(task_number) — concise summary with timeline and next actions
+  get_task_context(task_number) — attachments, related records, work notes
+  update_task_state(task_number, new_state, work_note) — change task state
+  add_work_note(task_number, note, is_customer_visible) — add work note or comment
+  update_task_fields(task_number, fields) — update arbitrary fields
+  get_my_tasks(user_name, task_types, state_filter, limit) — my open tasks
+  get_team_tasks(assignment_group, task_types, state_filter, limit) — team workload
+  get_task_dashboard(task_type, group_by) — task metrics by state/priority
+  get_state_model(task_type) — valid states and transitions
+  get_related_tasks(task_number) — parent, child, sibling tasks
+
 CMDB (query_cmdb):
   search_configuration_items(ci_type, environment, query, limit) — search CIs by type/env/query
   find_stale_configuration_items(ci_type, days, limit) — CIs not updated in N days
@@ -150,10 +165,45 @@ Keep labels short (3-6 words). Messages should be specific and actionable.
 Call suggest_follow_ups in the SAME response as create_artifact — do not make a separate response."""
 
 # ---------------------------------------------------------------------------
-# Tool definitions (6 ITOM agent tools)
+# Tool definitions (7 ITOM agent tools)
 # ---------------------------------------------------------------------------
 
 TOOLS = [
+    {
+        "name": "manage_tasks",
+        "description": (
+            "Read, update, and manage ServiceNow task records: incidents (INC), "
+            "change requests (CHG), service requests (REQ), request items (RITM), "
+            "and catalog tasks (SCTASK). Use for viewing task details, checking "
+            "status, adding work notes, changing states, task dashboards, and "
+            "searching tasks by assignee or team."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "Natural language query about tasks",
+                },
+                "tool_hint": {
+                    "type": "string",
+                    "description": (
+                        "Exact MCP tool name (e.g. 'get_task', 'search_tasks', "
+                        "'get_task_summary', 'update_task_state', 'get_task_dashboard'). "
+                        "Set when you can determine the specific operation."
+                    ),
+                },
+                "tool_args": {
+                    "type": "object",
+                    "description": (
+                        "Arguments for the MCP tool. Keys must match tool parameter "
+                        "names (e.g. {\"task_number\": \"INC0010001\"})."
+                    ),
+                },
+            },
+            "required": ["query"],
+        },
+    },
     {
         "name": "query_cmdb",
         "description": (
@@ -418,6 +468,7 @@ ALL_TOOLS = TOOLS + [CREATE_ARTIFACT_TOOL, SUGGEST_FOLLOW_UPS_TOOL]
 
 # Maps tool names to orchestrator target_agent IDs
 TOOL_TO_AGENT: dict[str, str] = {
+    "manage_tasks": "task-manager-agent",
     "query_cmdb": "cmdb-agent",
     "create_service_request": "csa-agent",
     "run_discovery": "discovery",
@@ -443,9 +494,9 @@ class ConversationHistory:
     """
 
     def __init__(self) -> None:
-        self._store: OrderedDict[str, list[dict]] = OrderedDict()
+        self._store: OrderedDict[str, list[dict[str, Any]]] = OrderedDict()
 
-    def add(self, conversation_id: str, message: dict) -> None:
+    def add(self, conversation_id: str, message: dict[str, Any]) -> None:
         """Add a message to a conversation's history."""
         if conversation_id not in self._store:
             # Evict oldest if at capacity
@@ -464,7 +515,7 @@ class ConversationHistory:
                 -MAX_MESSAGES_PER_CONVERSATION:
             ]
 
-    def get(self, conversation_id: str) -> list[dict]:
+    def get(self, conversation_id: str) -> list[dict[str, Any]]:
         """Get all messages for a conversation."""
         if conversation_id in self._store:
             self._store.move_to_end(conversation_id)
@@ -491,7 +542,7 @@ def get_conversation_history() -> ConversationHistory:
 # ---------------------------------------------------------------------------
 
 
-def _sse_event(event_type: str, data: dict) -> str:
+def _sse_event(event_type: str, data: dict[str, Any]) -> str:
     """Format a Server-Sent Event string."""
     payload = {"event": event_type, "data": data}
     return f"data: {json.dumps(payload)}\n\n"
@@ -502,7 +553,7 @@ def _sse_event(event_type: str, data: dict) -> str:
 # ---------------------------------------------------------------------------
 
 
-def _build_artifact_from_tool(tool_input: dict) -> dict | None:
+def _build_artifact_from_tool(tool_input: dict[str, Any]) -> dict[str, Any] | None:
     """Build a frontend-compatible artifact dict from create_artifact tool input.
 
     Returns None if required fields are missing.
@@ -530,7 +581,7 @@ def _build_artifact_from_tool(tool_input: dict) -> dict | None:
     }
 
 
-def _extract_follow_ups(tool_input: dict) -> list[dict]:
+def _extract_follow_ups(tool_input: dict[str, Any]) -> list[dict[str, Any]]:
     """Extract follow-up suggestions from suggest_follow_ups tool input.
 
     Returns a list of {label, message} dicts, or [] on invalid input.
@@ -655,10 +706,11 @@ def _build_system_prompt() -> str:
 # ---------------------------------------------------------------------------
 
 
-def _parse_tool_input(tool_block: dict, fallback_content: str) -> dict:
+def _parse_tool_input(tool_block: dict[str, Any], fallback_content: str) -> dict[str, Any]:
     """Parse a tool block's accumulated JSON, with a safe fallback."""
     try:
-        return json.loads(tool_block["input_json"])
+        result: dict[str, Any] = json.loads(tool_block["input_json"])
+        return result
     except json.JSONDecodeError as e:
         logger.warning(
             "Malformed tool JSON from Claude: %s — raw: %s",
@@ -739,7 +791,7 @@ async def stream_claude_response(
         client = _get_anthropic_client(settings.anthropic_api_key)
         messages = history.get(conversation_id)
 
-        tool_use_blocks: list[dict] = []
+        tool_use_blocks: list[dict[str, Any]] = []
 
         # First Claude call (may include tool_use)
         async with client.messages.stream(
@@ -747,44 +799,44 @@ async def stream_claude_response(
             max_tokens=settings.claude_max_tokens,
             temperature=settings.claude_temperature,
             system=_build_system_prompt(),
-            messages=messages,
-            tools=ALL_TOOLS,
+            messages=messages,  # type: ignore[arg-type]
+            tools=ALL_TOOLS,  # type: ignore[arg-type]
         ) as stream:
-            async for event in stream:
-                if event.type == "content_block_start":
-                    if event.content_block.type == "tool_use":
+            async for stream_event in stream:
+                if stream_event.type == "content_block_start":
+                    if stream_event.content_block.type == "tool_use":
                         tool_use_blocks.append({
-                            "id": event.content_block.id,
-                            "name": event.content_block.name,
+                            "id": stream_event.content_block.id,
+                            "name": stream_event.content_block.name,
                             "input_json": "",
                         })
-                elif event.type == "content_block_delta":
-                    if event.delta.type == "text_delta":
-                        text = event.delta.text
+                elif stream_event.type == "content_block_delta":
+                    if stream_event.delta.type == "text_delta":
+                        text = stream_event.delta.text
                         full_content += text
                         yield _sse_event("token", {
                             "token": text,
                             "message_id": message_id,
                         })
-                    elif event.delta.type == "input_json_delta":
+                    elif stream_event.delta.type == "input_json_delta":
                         if tool_use_blocks:
-                            tool_use_blocks[-1]["input_json"] += event.delta.partial_json
+                            tool_use_blocks[-1]["input_json"] += stream_event.delta.partial_json
 
         # Suggested actions collected from orchestrator tool responses
         # (populated when tool calls return actions from the orchestrator)
-        collected_actions: list[dict] = []
+        collected_actions: list[dict[str, Any]] = []
         # Artifacts created via create_artifact tool calls
-        collected_artifacts: list[dict] = []
+        collected_artifacts: list[dict[str, Any]] = []
         # Follow-up suggestions from suggest_follow_ups tool
-        collected_follow_ups: list[dict] = []
+        collected_follow_ups: list[dict[str, Any]] = []
         # Authoritative artifacts pre-extracted from orchestrator responses
         # (contain real SN URLs — these replace any Claude-fabricated versions)
-        authoritative_artifacts: list[dict] = []
+        authoritative_artifacts: list[dict[str, Any]] = []
 
         # If Claude wants to call tools, execute them and get a follow-up response
         if tool_use_blocks:
             # Build the assistant message with tool_use blocks for history
-            assistant_content: list[dict] = []
+            assistant_content: list[dict[str, Any]] = []
             if full_content:
                 assistant_content.append({"type": "text", "text": full_content})
             for tool_block in tool_use_blocks:
@@ -799,7 +851,7 @@ async def stream_claude_response(
             history.add(conversation_id, {"role": "assistant", "content": assistant_content})
 
             # Execute each tool call
-            tool_results: list[dict] = []
+            tool_results: list[dict[str, Any]] = []
             has_orchestrator_tools = False
             for tool_block in tool_use_blocks:
                 tool_input = _parse_tool_input(tool_block, content)
@@ -842,36 +894,36 @@ async def stream_claude_response(
                 # Second Claude call: interpret tool results
                 messages_with_results = history.get(conversation_id)
                 full_content = ""  # Reset for second response
-                second_round_tool_blocks: list[dict] = []
+                second_round_tool_blocks: list[dict[str, Any]] = []
 
                 async with client.messages.stream(
                     model=settings.claude_model,
                     max_tokens=settings.claude_max_tokens,
                     temperature=settings.claude_temperature,
                     system=_build_system_prompt(),
-                    messages=messages_with_results,
-                    tools=ALL_TOOLS,
+                    messages=messages_with_results,  # type: ignore[arg-type]
+                    tools=ALL_TOOLS,  # type: ignore[arg-type]
                 ) as stream:
-                    async for event in stream:
-                        if event.type == "content_block_start":
-                            if event.content_block.type == "tool_use":
+                    async for stream_event in stream:
+                        if stream_event.type == "content_block_start":
+                            if stream_event.content_block.type == "tool_use":
                                 second_round_tool_blocks.append({
-                                    "id": event.content_block.id,
-                                    "name": event.content_block.name,
+                                    "id": stream_event.content_block.id,
+                                    "name": stream_event.content_block.name,
                                     "input_json": "",
                                 })
-                        elif event.type == "content_block_delta":
-                            if event.delta.type == "text_delta":
-                                text = event.delta.text
+                        elif stream_event.type == "content_block_delta":
+                            if stream_event.delta.type == "text_delta":
+                                text = stream_event.delta.text
                                 full_content += text
                                 yield _sse_event("token", {
                                     "token": text,
                                     "message_id": message_id,
                                 })
-                            elif event.delta.type == "input_json_delta":
+                            elif stream_event.delta.type == "input_json_delta":
                                 if second_round_tool_blocks:
                                     second_round_tool_blocks[-1]["input_json"] += (
-                                        event.delta.partial_json
+                                        stream_event.delta.partial_json
                                     )
 
                 # Process local tool calls from the second round
@@ -924,7 +976,7 @@ async def stream_claude_response(
                 collected_artifacts.append(detected)
 
         # Emit stream_end (include suggested_actions from orchestrator + follow-ups)
-        end_data: dict = {
+        end_data: dict[str, Any] = {
             "message_id": message_id,
             "full_content": full_content,
             "agent_id": "claude",
@@ -997,7 +1049,7 @@ async def stream_claude_response(
 # ---------------------------------------------------------------------------
 
 
-def _extract_authoritative_artifacts(response_text: str) -> list[dict]:
+def _extract_authoritative_artifacts(response_text: str) -> list[dict[str, Any]]:
     """Pre-extract dashboard/report artifacts from orchestrator response text.
 
     These artifacts contain real ServiceNow URLs generated by the orchestrator.
@@ -1007,7 +1059,7 @@ def _extract_authoritative_artifacts(response_text: str) -> list[dict]:
     Returns frontend-compatible artifact dicts (same shape as _build_artifact_from_tool).
     """
     detected = _artifact_detector.detect(response_text)
-    authoritative: list[dict] = []
+    authoritative: list[dict[str, Any]] = []
     for art in detected:
         if art.artifact_type.value not in ("dashboard", "report", "table"):
             continue
@@ -1031,9 +1083,9 @@ def _extract_authoritative_artifacts(response_text: str) -> list[dict]:
 
 async def _call_orchestrator_tool(
     tool_name: str,
-    tool_input: dict,
+    tool_input: dict[str, Any],
     conversation_id: str,
-) -> tuple[str, list[dict], list[dict]]:
+) -> tuple[str, list[dict[str, Any]], list[dict[str, Any]]]:
     """Call the ITOM orchestrator with an explicit target_agent.
 
     This bypasses the orchestrator's keyword router entirely by setting
@@ -1057,7 +1109,7 @@ async def _call_orchestrator_tool(
 
     query = tool_input.get("query", "")
     context = {k: v for k, v in tool_input.items() if k != "query"}
-    orchestrator_payload: dict = {
+    orchestrator_payload: dict[str, Any] = {
         "message": query,
         "target_agent": target_agent,
         "session_id": conversation_id,
@@ -1094,7 +1146,7 @@ async def _call_orchestrator_tool(
 
             # Extract agent_response and suggested_actions from nested structure
             resp = orch_data.get("response", {})
-            actions: list[dict] = []
+            actions: list[dict[str, Any]] = []
             response_text = ""
             if isinstance(resp, dict):
                 result = resp.get("result", {})
