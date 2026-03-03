@@ -79,20 +79,36 @@ async def _query_orchestrator_status(
     If the orchestrator is unreachable, returns an empty dict so that
     all agents default to "offline".
     """
+    # Map orchestrator agent_ids (e.g. "discovery-agent") to the short
+    # IDs used in _AGENT_DEFINITIONS (e.g. "discovery").  The "auto"
+    # agent is virtual and maps to the orchestrator health endpoint.
+    _ORCH_TO_SHORT: dict[str, str] = {
+        "discovery-agent": "discovery",
+        "asset-agent": "asset",
+        "itom-auditor": "auditor",
+        "itom-documentator": "documentator",
+        "cmdb-agent": "cmdb",
+        "csa-agent": "csa",
+    }
+
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
             response = await client.get(f"{orchestrator_url}/api/agents/status")
             if response.status_code == 200:
                 data = response.json()
                 statuses: dict[str, AgentStatus] = {}
-                # The orchestrator returns {"agents": [{"id": "...", "status": "..."}]}
                 for agent_data in data.get("agents", []):
-                    agent_id = agent_data.get("id", "")
+                    orch_id = agent_data.get("agent_id", agent_data.get("id", ""))
+                    short_id = _ORCH_TO_SHORT.get(orch_id, orch_id)
                     raw_status = agent_data.get("status", "offline")
                     try:
-                        statuses[agent_id] = AgentStatus(raw_status)
+                        statuses[short_id] = AgentStatus(raw_status)
                     except ValueError:
-                        statuses[agent_id] = AgentStatus.OFFLINE
+                        statuses[short_id] = AgentStatus.OFFLINE
+                # If any agent is online, mark the "auto" orchestrator
+                # entry as online too.
+                if any(s == AgentStatus.ONLINE for s in statuses.values()):
+                    statuses["auto"] = AgentStatus.ONLINE
                 return statuses
     except httpx.RequestError as exc:
         logger.debug("Orchestrator unreachable at %s: %s", orchestrator_url, exc)
