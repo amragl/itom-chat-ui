@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import logging
+import sqlite3
 from typing import Any
 
 from ..artifact_detector import ArtifactDetector
@@ -44,7 +45,7 @@ class ConversationService:
         self._detector = ArtifactDetector()
 
     @property
-    def _conn(self):
+    def _conn(self) -> sqlite3.Connection:
         """Return the database connection, lazily initialized."""
         return get_db(self._settings.database_url)
 

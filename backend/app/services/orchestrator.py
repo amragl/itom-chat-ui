@@ -182,7 +182,8 @@ class OrchestratorService:
             }
 
         try:
-            return response.json()
+            data: dict[str, Any] = response.json()
+            return data
         except (ValueError, KeyError):
             return {
                 "items": [],

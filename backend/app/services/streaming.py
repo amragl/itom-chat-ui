@@ -20,6 +20,7 @@ import logging
 import uuid
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
+from typing import Any
 
 import httpx
 
@@ -255,7 +256,7 @@ async def stream_chat_response(
     serialized_artifacts = ArtifactDetector.serialize_for_frontend(detected_artifacts)
 
     # Emit stream_end event with the full assembled content
-    end_data: dict = {
+    end_data: dict[str, Any] = {
         "message_id": message_id,
         "full_content": agent_response_text or "",
         "agent_id": actual_agent_id,
@@ -281,7 +282,7 @@ async def stream_chat_response(
     )
 
 
-def extract_content(orch_data: dict) -> tuple[str, list[dict[str, str]]]:
+def extract_content(orch_data: dict[str, Any]) -> tuple[str, list[dict[str, str]]]:
     """Extract the displayable text content from an orchestrator response.
 
     Tries several paths to find the agent's actual response text:

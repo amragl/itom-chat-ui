@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
 # start-system.sh — Launch the full ITOMIA system
 #
-# Starts nine services:
+# Starts ten services:
 #   1. CMDB MCP Server       (port 8002)
 #   2. CSA Agent             (port 8003)
 #   3. Discovery Agent       (port 8004)
 #   4. Asset Agent           (port 8005)
 #   5. ITOM Auditor          (port 8006)
 #   6. ITOM Documentator     (port 8007)
-#   7. ITOM Orchestrator     (port 8000)
-#   8. Chat Backend          (port 8001)
-#   9. Chat Frontend         (port 3000)
+#   7. Task Manager Agent    (port 8008)
+#   8. ITOM Orchestrator     (port 8000)
+#   9. Chat Backend          (port 8001)
+#  10. Chat Frontend         (port 3000)
 #
 # Usage:
 #   bash scripts/start-system.sh
@@ -36,6 +37,7 @@ DISCOVERY_AGENT_DIR="$(resolve_dir snow-discovery-agent)"
 ASSET_AGENT_DIR="$(resolve_dir snow-asset-agent)"
 AUDITOR_DIR="$(resolve_dir snow-itom-auditor)"
 DOCUMENTATOR_DIR="$(resolve_dir snow-itom-documentator)"
+TASK_MANAGER_DIR="$(resolve_dir snow-task-manager)"
 ORCHESTRATOR_DIR="$(resolve_dir itom-orchestrator)"
 
 # ---------------------------------------------------------------------------
@@ -47,11 +49,12 @@ DISCOVERY_PORT=8004
 ASSET_PORT=8005
 AUDITOR_PORT=8006
 DOCUMENTATOR_PORT=8007
+TASK_MANAGER_PORT=8008
 ORCHESTRATOR_PORT=8000
 BACKEND_PORT=8001
 FRONTEND_PORT=3000
 
-ALL_PORTS=($CMDB_MCP_PORT $CSA_PORT $DISCOVERY_PORT $ASSET_PORT $AUDITOR_PORT $DOCUMENTATOR_PORT $ORCHESTRATOR_PORT $BACKEND_PORT $FRONTEND_PORT)
+ALL_PORTS=($CMDB_MCP_PORT $CSA_PORT $DISCOVERY_PORT $ASSET_PORT $AUDITOR_PORT $DOCUMENTATOR_PORT $TASK_MANAGER_PORT $ORCHESTRATOR_PORT $BACKEND_PORT $FRONTEND_PORT)
 
 # PID tracking
 PIDS=()
@@ -75,12 +78,18 @@ skip() { echo -e "${YELLOW}[ skip ]${NC} $*"; }
 
 kill_port() {
   local port=$1
-  local pid
-  pid=$(lsof -ti :"$port" 2>/dev/null || true)
-  if [ -n "$pid" ]; then
-    warn "Killing existing process on port $port (PID $pid)"
-    kill "$pid" 2>/dev/null || true
+  local pids
+  pids=$(lsof -ti :"$port" 2>/dev/null || true)
+  if [ -n "$pids" ]; then
+    warn "Killing existing processes on port $port (PIDs: $pids)"
+    echo "$pids" | xargs kill 2>/dev/null || true
     sleep 0.5
+    # Force-kill any survivors
+    pids=$(lsof -ti :"$port" 2>/dev/null || true)
+    if [ -n "$pids" ]; then
+      echo "$pids" | xargs kill -9 2>/dev/null || true
+      sleep 0.3
+    fi
   fi
 }
 
@@ -203,7 +212,12 @@ start_fastmcp_agent "$AUDITOR_DIR"       "snow_itom_auditor.server"      $AUDITO
 start_fastmcp_agent "$DOCUMENTATOR_DIR"  "snow_itom_documentator.server" $DOCUMENTATOR_PORT "ITOM Documentator"
 
 # ---------------------------------------------------------------------------
-# 7. Orchestrator (port 8000) — after agents so URLs can be passed in
+# 7. Task Manager Agent (port 8008)
+# ---------------------------------------------------------------------------
+start_fastmcp_agent "$TASK_MANAGER_DIR"  "src.server" $TASK_MANAGER_PORT "Task Manager Agent"
+
+# ---------------------------------------------------------------------------
+# 8. Orchestrator (port 8000) — after agents so URLs can be passed in
 # ---------------------------------------------------------------------------
 if [ -n "$ORCHESTRATOR_DIR" ]; then
   log "Starting ITOM Orchestrator on port $ORCHESTRATOR_PORT..."
@@ -214,6 +228,7 @@ if [ -n "$ORCHESTRATOR_DIR" ]; then
   export ORCH_ASSET_AGENT_URL="http://localhost:$ASSET_PORT/mcp"
   export ORCH_AUDITOR_AGENT_URL="http://localhost:$AUDITOR_PORT/mcp"
   export ORCH_DOCUMENTATOR_AGENT_URL="http://localhost:$DOCUMENTATOR_PORT/mcp"
+  export ORCH_TASK_MANAGER_AGENT_URL="http://localhost:$TASK_MANAGER_PORT/mcp"
   export ORCH_SN_INSTANCE="${ORCH_SN_INSTANCE:-$SERVICENOW_INSTANCE}"
 
   local_python=".venv/bin/python"
@@ -260,6 +275,7 @@ sleep 4
 [ -n "$ASSET_AGENT_DIR" ]    && wait_for_port $ASSET_PORT       "Asset Agent"      20 || true
 [ -n "$AUDITOR_DIR" ]        && wait_for_port $AUDITOR_PORT     "ITOM Auditor"     20 || true
 [ -n "$DOCUMENTATOR_DIR" ]   && wait_for_port $DOCUMENTATOR_PORT "ITOM Documentator" 20 || true
+[ -n "$TASK_MANAGER_DIR" ]   && wait_for_port $TASK_MANAGER_PORT "Task Manager Agent" 20 || true
 [ -n "$ORCHESTRATOR_DIR" ]   && wait_for_port $ORCHESTRATOR_PORT "Orchestrator"    30 || true
 [ -n "$ORCHESTRATOR_DIR" ]   && health_check "http://localhost:$ORCHESTRATOR_PORT/api/health" "Orchestrator" || true
 wait_for_port $BACKEND_PORT "Chat Backend" 30 || true
@@ -292,6 +308,7 @@ print_row "Discovery Agent"     $DISCOVERY_PORT   "http://localhost:$DISCOVERY_P
 print_row "Asset Agent"         $ASSET_PORT       "http://localhost:$ASSET_PORT"        "$([ -n "$ASSET_AGENT_DIR" ] && echo 1 || echo 0)"
 print_row "ITOM Auditor"        $AUDITOR_PORT     "http://localhost:$AUDITOR_PORT"      "$([ -n "$AUDITOR_DIR" ] && echo 1 || echo 0)"
 print_row "ITOM Documentator"   $DOCUMENTATOR_PORT "http://localhost:$DOCUMENTATOR_PORT" "$([ -n "$DOCUMENTATOR_DIR" ] && echo 1 || echo 0)"
+print_row "Task Manager Agent" $TASK_MANAGER_PORT "http://localhost:$TASK_MANAGER_PORT" "$([ -n "$TASK_MANAGER_DIR" ] && echo 1 || echo 0)"
 print_row "Orchestrator"        $ORCHESTRATOR_PORT "http://localhost:$ORCHESTRATOR_PORT" "$([ -n "$ORCHESTRATOR_DIR" ] && echo 1 || echo 0)"
 print_row "Chat Backend"        $BACKEND_PORT     "http://localhost:$BACKEND_PORT"     "1"
 print_row "Chat Frontend"       $FRONTEND_PORT    "http://localhost:$FRONTEND_PORT"    "1"

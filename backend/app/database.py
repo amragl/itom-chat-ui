@@ -382,7 +382,8 @@ def get_conversation_context(
 
     if row is None:
         return None
-    return json.loads(row["metadata"])
+    result: dict[str, Any] = json.loads(row["metadata"])
+    return result
 
 
 def set_conversation_context(
